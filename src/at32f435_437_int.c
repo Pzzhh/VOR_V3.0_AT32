@@ -94,14 +94,7 @@ void UsageFault_Handler(void)
   }
 }
 
-/**
-  * @brief  this function handles svcall exception.
-  * @param  none
-  * @retval none
-  */
-void SVC_Handler(void)
-{
-}
+
 
 /**
   * @brief  this function handles debug monitor exception.
@@ -112,15 +105,16 @@ void DebugMon_Handler(void)
 {
 }
 
+#ifdef INC_FREERTOS_H
+
 /**
-  * @brief  this function handles pendsv_handler exception.
+  * @brief  this function handles svcall exception.
   * @param  none
   * @retval none
   */
-void PendSV_Handler(void)
+void SVC_Handler(void)
 {
 }
-
 /**
   * @brief  this function handles systick handler.
   * @param  none
@@ -132,6 +126,15 @@ void SysTick_Handler(void)
   tmr_event_sw_trigger(TMR1, TMR_HALL_SWTRIG);
 }
 
+/**
+  * @brief  this function handles pendsv_handler exception.
+  * @param  none
+  * @retval none
+  */
+void PendSV_Handler(void)
+{
+}
+#endif
 /**
   * @}
   */

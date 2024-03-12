@@ -331,7 +331,7 @@
               <MiscControls></MiscControls>
               <Define>AT32F435ZMT7,USE_STDPERIPH_DRIVER,AT_START_F435_V1</Define>
               <Undefine></Undefine>
-              <IncludePath>.\libraries\drivers\inc;.\inc;.\libraries\cmsis\cm4\core_support;.\libraries\cmsis\cm4\device_support</IncludePath>
+              <IncludePath>.\libraries\drivers\inc;.\inc;.\libraries\cmsis\cm4\core_support;.\libraries\cmsis\cm4\device_support;.\middleLib\freertos\source\include;.\middleLib\freertos\source\portable\memmang;.\middleLib\freertos\source\portable\rvds\ARM_CM4F;.\cfg</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -388,6 +388,11 @@
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\main.c</FilePath>
+            </File>
+            <File>
+              <FileName>include_port.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\cfg\include_port.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -548,6 +553,71 @@
               <FileName>system_at32f435_437.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\libraries\cmsis\cm4\device_support\system_at32f435_437.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>freertos</GroupName>
+          <Files>
+            <File>
+              <FileName>croutine.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleLib\freertos\source\croutine.c</FilePath>
+            </File>
+            <File>
+              <FileName>event_groups.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleLib\freertos\source\event_groups.c</FilePath>
+            </File>
+            <File>
+              <FileName>list.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleLib\freertos\source\list.c</FilePath>
+            </File>
+            <File>
+              <FileName>queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleLib\freertos\source\queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>stream_buffer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleLib\freertos\source\stream_buffer.c</FilePath>
+            </File>
+            <File>
+              <FileName>tasks.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleLib\freertos\source\tasks.c</FilePath>
+            </File>
+            <File>
+              <FileName>timers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleLib\freertos\source\timers.c</FilePath>
+            </File>
+            <File>
+              <FileName>heap_4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleLib\freertos\source\portable\memmang\heap_4.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>communication</GroupName>
+          <Files>
+            <File>
+              <FileName>communication.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\communication\communication.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>implement</GroupName>
+          <Files>
+            <File>
+              <FileName>Main_Ctrl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\implement\Main_Ctrl.c</FilePath>
             </File>
           </Files>
         </Group>
