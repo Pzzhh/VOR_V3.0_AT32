@@ -764,19 +764,19 @@
 
   <Group>
     <GroupName>communication</GroupName>
-    <tvExp>0</tvExp>
+    <tvExp>1</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
     <File>
       <GroupNumber>5</GroupNumber>
       <FileNumber>43</FileNumber>
-      <FileType>1</FileType>
+      <FileType>8</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\communication\communication.c</PathWithFileName>
-      <FilenameWithoutPath>communication.c</FilenameWithoutPath>
+      <PathWithFileName>.\communication\communication.cpp</PathWithFileName>
+      <FilenameWithoutPath>communication.cpp</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -791,12 +791,24 @@
     <File>
       <GroupNumber>6</GroupNumber>
       <FileNumber>44</FileNumber>
-      <FileType>1</FileType>
+      <FileType>5</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\implement\Main_Ctrl.c</PathWithFileName>
-      <FilenameWithoutPath>Main_Ctrl.c</FilenameWithoutPath>
+      <PathWithFileName>.\implement\Main_Ctrl.h</PathWithFileName>
+      <FilenameWithoutPath>Main_Ctrl.h</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>6</GroupNumber>
+      <FileNumber>45</FileNumber>
+      <FileType>8</FileType>
+      <tvExp>0</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\implement\Main_Ctrl.cpp</PathWithFileName>
+      <FilenameWithoutPath>Main_Ctrl.cpp</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>

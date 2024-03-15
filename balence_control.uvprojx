@@ -605,9 +605,9 @@
           <GroupName>communication</GroupName>
           <Files>
             <File>
-              <FileName>communication.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\communication\communication.c</FilePath>
+              <FileName>communication.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\communication\communication.cpp</FilePath>
             </File>
           </Files>
         </Group>
@@ -615,9 +615,14 @@
           <GroupName>implement</GroupName>
           <Files>
             <File>
-              <FileName>Main_Ctrl.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\implement\Main_Ctrl.c</FilePath>
+              <FileName>Main_Ctrl.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\implement\Main_Ctrl.h</FilePath>
+            </File>
+            <File>
+              <FileName>Main_Ctrl.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\implement\Main_Ctrl.cpp</FilePath>
             </File>
           </Files>
         </Group>
