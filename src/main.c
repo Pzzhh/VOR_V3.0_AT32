@@ -1,3 +1,11 @@
+/*
+ * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @Date: 2025-09-11 15:48:47
+ * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @LastEditTime: 2025-09-11 15:53:25
+ * @FilePath: \Slave_At32\src\main.c
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 /**
  **************************************************************************
  * @file     main.c
@@ -48,139 +56,6 @@ uint16_t channel1pulse = 0, channel2pulse = 0, channel3pulse = 0, channel4pulse 
 int main(void)
 {
   system_clock_config();
-#if 0 //定时器初始化等代码
-//  at32_board_init();
-
-  /* get system clock */
-  crm_clocks_freq_get(&crm_clocks_freq_struct);
-
-  /* turn led2/led3/led4 on */
-//  at32_led_on(LED2);
-//  at32_led_on(LED3);
-//  at32_led_on(LED4);
-
-  /* enable TMR3/gpioa/gpiob clock */
-  crm_periph_clock_enable(CRM_TMR3_PERIPH_CLOCK, TRUE);
-    crm_periph_clock_enable(CRM_TMR20_PERIPH_CLOCK, TRUE);
-  crm_periph_clock_enable(CRM_GPIOA_PERIPH_CLOCK, TRUE);
-  crm_periph_clock_enable(CRM_GPIOB_PERIPH_CLOCK, TRUE);
-   crm_periph_clock_enable(CRM_GPIOF_PERIPH_CLOCK, TRUE);
-
-  /* timer1 output pin Configuration */
-  gpio_init_struct.gpio_pins = GPIO_PINS_6;// | GPIO_PINS_9 | GPIO_PINS_10 | GPIO_PINS_11;
-  gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
-  gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
-  gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
-  gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-  gpio_init(GPIOA, &gpio_init_struct);
-
-    /* timer1 output pin Configuration */
-  gpio_init_struct.gpio_pins = GPIO_PINS_3;// | GPIO_PINS_9 | GPIO_PINS_10 | GPIO_PINS_11;
-  gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
-  gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
-  gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
-  gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-  gpio_init(GPIOF, &gpio_init_struct);
-
-  /* timer1 output pin Configuration */
-  gpio_init_struct.gpio_pins = GPIO_PINS_6;// | GPIO_PINS_9 | GPIO_PINS_10 | GPIO_PINS_11;
-  gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
-  gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
-  gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
-  gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-  gpio_init(GPIOA, &gpio_init_struct);
-
-//  gpio_init_struct.gpio_pins = GPIO_PINS_13 | GPIO_PINS_14 | GPIO_PINS_15;
-//  gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
-//  gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
-//  gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
-//  gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-//  gpio_init(GPIOB, &gpio_init_struct);
-
-  gpio_pin_mux_config(GPIOF,GPIO_PINS_SOURCE3,GPIO_MUX_2);
-  gpio_pin_mux_config(GPIOA, GPIO_PINS_SOURCE6, GPIO_MUX_2);    //使用tmr3 ch1作为输出->mux2
-
-//  /* TMR3 configuration ---------------------------------------------------
-//   generate 7 pwm signals with 4 different duty cycles:
-//   prescaler = 0, TMR3 counter clock = apb2_freq *2
-
-//   the objective is to generate 7 pwm signal at 17.57 khz:
-//     - tim1_period = (apb2_freq * 2 / 17570) - 1
-//   the channel 1 and channel 1n duty cycle is set to 50%
-//   the channel 2 and channel 2n duty cycle is set to 37.5%
-//   the channel 3 and channel 3n duty cycle is set to 25%
-//   the channel 4 duty cycle is set to 12.5%
-//   the timer pulse is calculated as follows:
-//     - channelxpulse = dutycycle * (tim1_period - 1) / 100
-//  ----------------------------------------------------------------------- */
-//  /* compute the value to be set in arr regiter to generate signal frequency at 17.57 khz */
-  timerperiod = ((crm_clocks_freq_struct.apb2_freq * 2) / 17570 ) - 1;
-  /* compute ccr1 value to generate a duty cycle at 50% for channel 1 and 1n */
-  channel1pulse = (uint16_t) (((uint32_t) 5 * (timerperiod - 1)) / 10);
-  /* compute ccr2 value to generate a duty cycle at 37.5%  for channel 2 and 2n */
-  channel2pulse = (uint16_t) (((uint32_t) 375 * (timerperiod - 1)) / 1000);
-  /* compute ccr3 value to generate a duty cycle at 25%  for channel 3 and 3n */
-  channel3pulse = (uint16_t) (((uint32_t) 25 * (timerperiod - 1)) / 100);
-  /* compute ccr4 value to generate a duty cycle at 12.5%  for channel 4 */
-  channel4pulse = (uint16_t) (((uint32_t) 125 * (timerperiod- 1)) / 1000);
-
-  tmr_base_init(TMR3, timerperiod, 0);
-  tmr_cnt_dir_set(TMR3, TMR_COUNT_UP);
-
-  /* channel 1, 2, 3 and 4 configuration in output mode */
-  tmr_output_default_para_init(&tmr_output_struct);
-  tmr_output_struct.oc_mode = TMR_OUTPUT_CONTROL_PWM_MODE_B;
-  tmr_output_struct.oc_output_state = TRUE;
-  tmr_output_struct.oc_polarity = TMR_OUTPUT_ACTIVE_LOW;
-  tmr_output_struct.oc_idle_state = TRUE;
-  tmr_output_struct.occ_output_state = TRUE;
-  tmr_output_struct.occ_polarity = TMR_OUTPUT_ACTIVE_HIGH;
-  tmr_output_struct.occ_idle_state = FALSE;
-  /* channel 1 */
-  tmr_output_channel_config(TMR3, TMR_SELECT_CHANNEL_1, &tmr_output_struct);
-  tmr_channel_value_set(TMR3, TMR_SELECT_CHANNEL_1, channel1pulse);
-#if 0
-  /* channel 2 */
-  tmr_output_channel_config(TMR3, TMR_SELECT_CHANNEL_2, &tmr_output_struct);
-  tmr_channel_value_set(TMR3, TMR_SELECT_CHANNEL_2, channel2pulse);
-  /* channel 3 */
-  tmr_output_channel_config(TMR3, TMR_SELECT_CHANNEL_3, &tmr_output_struct);
-  tmr_channel_value_set(TMR3, TMR_SELECT_CHANNEL_3, channel3pulse);
-  /* channel 4 */
-  tmr_output_channel_config(TMR3, TMR_SELECT_CHANNEL_4, &tmr_output_struct);
-  tmr_channel_value_set(TMR3, TMR_SELECT_CHANNEL_4, channel4pulse);
-#endif
-  /* TMR20 output enable */
-  tmr_output_enable(TMR3, TRUE);
-  /* enable TMR20 */
-  tmr_counter_enable(TMR3, TRUE);
-
-  tmr_base_init(TMR20, timerperiod, 0);
-  tmr_cnt_dir_set(TMR20, TMR_COUNT_UP);
-
-//  /* channel 1, 2, 3 and 4 configuration in output mode */
-//  tmr_output_default_para_init(&tmr_output_struct);
-//  tmr_output_struct.oc_mode = TMR_OUTPUT_CONTROL_PWM_MODE_B;
-//  tmr_output_struct.oc_output_state = TRUE;
-//  tmr_output_struct.oc_polarity = TMR_OUTPUT_ACTIVE_LOW;
-//  tmr_output_struct.oc_idle_state = TRUE;
-//  tmr_output_struct.occ_output_state = TRUE;
-//  tmr_output_struct.occ_polarity = TMR_OUTPUT_ACTIVE_HIGH;
-//  tmr_output_struct.occ_idle_state = FALSE;
-//  /* channel 1 */
-//  tmr_output_channel_config(TMR20, TMR_SELECT_CHANNEL_4, &tmr_output_struct);
-//  tmr_channel_value_set(TMR20, TMR_SELECT_CHANNEL_4, channel1pulse);
-
-//  /* TMR20 output enable */
-//  tmr_output_enable(TMR20, TRUE);
-//  /* enable TMR20 */
-//  tmr_counter_enable(TMR20, TRUE);
-
-  while(1)
-  {
-    
-  }
-#endif
 
 
 }
