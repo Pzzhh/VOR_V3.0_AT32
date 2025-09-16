@@ -2,15 +2,12 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-30 14:37:06
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2024-09-06 14:26:22
+ * @LastEditTime: 2025-09-16 17:19:58
  * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\HARDWARE\USART\USART5.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #include "USART6.h"
-#include "at32f435_437_conf.h"
-#include "at32f435_437_usart.h"
-#include "at32f435_437_gpio.h"
-#include "at32f435_437_crm.h"
+#include "at32f435_437.h"
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>

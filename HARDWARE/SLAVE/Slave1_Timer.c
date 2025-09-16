@@ -1,27 +1,27 @@
 #include "Slave1_Timer.h"
 #include "Slave1_IO.h"
-#include "stm32f4xx.h"
+#include "at32f435_437.h"
 #include "math.h"
 
 Slave_Function_CB function_cb;
 void TIM1_BRK_TIM9_IRQHandler(void)
 {
-    if (TIM9->SR & TIM_IT_Update) // ????????????
+
+    if (TMR9->ists_bit.ovfif) // ????????????
     {
         if (function_cb != 0)
         {
             uint8_t res = function_cb();
             if (res)
-						{
-							     TIM9->CR1 &= ~TIM_CR1_CEN;
-										extern void Slave1_En_IO(uint8_t state);
-									 Slave1_En_IO(0);
-						}
-           
+            {
+                TMR9->ctrl1_bit.tmren = 0;
+                extern void Slave1_En_IO(uint8_t state);
+                Slave1_En_IO(0);
+            }
         }
         // 补停机代码
     }
-    TIM9->SR = (uint16_t)~TIM_IT_Update;
+    TMR9->ists = 0;
 }
 // 当handler返回1时停止状态机
 void Slave1_Set_Machine_Cb(Slave_Function_CB cb)
@@ -30,44 +30,18 @@ void Slave1_Set_Machine_Cb(Slave_Function_CB cb)
     Slave1_En_IO(1);
     // Slave1_Step_Generator_Init(50000, 10);
     Slave_server_Init();
-    TIM9->CR1 &= ~TIM_CR1_CEN;
+    TMR9->ctrl1_bit.tmren = 0;
     function_cb = cb;
-    TIM9->CR1 |= TIM_CR1_CEN;
+    TMR9->ctrl1_bit.tmren = 1;
 }
 
 void Step_Phase_Set(u32 arr, u32 psc)
 {
     if (arr == 0 && psc == 0)
-        TIM_Cmd(TIM1, DISABLE);
-#if 1
-    // 此部分需手动修改IO口设置
-    TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
-    // TIM_OCInitTypeDef  TIM_OCInitStructure;
-
-    TIM_TimeBaseStructure.TIM_Prescaler = psc;                  // 定时器分频
-    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up; // 向上计数模式
-    TIM_TimeBaseStructure.TIM_Period = arr;                     // 自动重装载值
-    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-
-    TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure); // 初始化定时器14
-    TIM1->CCR1 = arr / 2;
-
-    TIM_Cmd(TIM1, ENABLE); // 使能TIM14
-#else
-    TIM1->CR1 &= ~TIM_CR1_CEN;
-    uint16_t cval = TIM1->CNT + 1;
-    TIM1->PSC = 0;
-    TIM1->PSC = psc;
-    if (TIM1->CCR1 > TIM1->CNT)
-        TIM1->CCR1 = 0xffff;
-    else
-        TIM1->CCR1 = 0x0;
-    deg = (float)TIM1->CNT / TIM1->ARR;
-    TIM1->CNT = (arr)*cval / (TIM1->ARR + 1) - 1;
-    TIM1->ARR = arr - 1;
-    TIM1->CCR1 = arr / 2 - 1;
-    TIM1->CR1 |= TIM_CR1_CEN;
-#endif
+        TMR1->ctrl1_bit.tmren = 0;
+    TMR1->pr = psc;
+    TMR1->cval = arr;
+    TMR1->ctrl1_bit.tmren = 1;
 }
 
 void SRV1_Encoder_Init()
@@ -75,29 +49,7 @@ void SRV1_Encoder_Init()
     // const uint32_t ARR_VALUE = 2097156;
     const uint16_t ch1_pin = 5;
     const uint16_t ch2_pin = 3;
-    RCC->APB1ENR |= (RCC_APB1ENR_TIM2EN);
-    RCC->AHB2ENR |= RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOAEN;
-    // Configure TIM2 in Encoder mode 3 (count on both TI1FP1 and TI2FP2 edges)
-    TIM2->SMCR &= ~TIM_SMCR_SMS;
-    TIM2->SMCR |= TIM_SMCR_SMS_0 | TIM_SMCR_SMS_1; // Encoder mode 3
-
-    // Configure input capture for both channels
-    TIM2->CCMR1 &= ~(TIM_CCMR1_CC1S | TIM_CCMR1_CC2S);
-    TIM2->CCMR1 |= TIM_CCMR1_CC1S_1 | TIM_CCMR1_CC2S_1; // CC1 channel as input, mapped on TI1; CC2 channel as input, mapped on TI2
-
-    // Set the polarity and filter (if needed)
-    TIM2->CCER &= ~(TIM_CCER_CC1P | TIM_CCER_CC2P);    // Non-inverted polarity
-    TIM2->CCMR1 &= ~(TIM_CCMR1_IC1F | TIM_CCMR1_IC2F); // No filter
-
-    // Enable the counter
-    TIM2->CR1 |= TIM_CR1_CEN;
-    // TIM2->SMCR |= 0x03; // use clock input encoder c mode
-
-    // TIM2->CCMR1 |= 0x01;
-    // TIM2->CCMR1 |= (0x01 << 8);
-
-    // TIM2->CCER |= TIM_CCER_CC1E;
-    // TIM2->CCER |= TIM_CCER_CC2E;
+    CRM->apb1en_bit.tmr2
 
     GPIOA->MODER |= (0x02 << ch1_pin * 2);
     GPIOB->MODER |= (0x02 << ch2_pin * 2);
@@ -121,7 +73,7 @@ void Slave_server_Init(void)
 #ifdef HARDWARE_TEST
     TIM_TimeBaseInitStructure.TIM_Prescaler = 167; // 定时器分频
 #else
-    TIM_TimeBaseInitStructure.TIM_Prescaler = 336  - 1; // 定时器分频
+    TIM_TimeBaseInitStructure.TIM_Prescaler = 336 - 1; // 定时器分频
 #endif
     TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up; // 向上计数模式
     TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -176,7 +128,7 @@ void Slave1_Step_Generator_Init(uint32_t arr, uint32_t psc)
     // Enable the TIM1 counter
     TIM1->CR1 |= TIM_CR1_CEN;
     TIM1->CCR1 = arr / 2;
-   
+
     Slave_server_Init();
 }
 
