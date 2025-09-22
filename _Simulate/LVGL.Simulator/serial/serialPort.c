@@ -15,10 +15,10 @@ void SerialPort_SendBuf(uint8_t* buf, uint16_t len)
     DWORD bytesWritten;
     if (hSerial == 0)
         return;
-    OutputDebugPrintf("\r\n [BL]<- %s \r\n",buf);
-  /*  for (int i = 0;i < len;i++)
-        OutputDebugPrintf(".%02X", buf[i]);*/
-    //OutputDebugPrintf("\r\n");
+    OutputDebugPrintf("\r\n [BL]<- ");
+    for (int i = 0;i < len;i++)
+        OutputDebugPrintf(".%02X", buf[i]);
+    OutputDebugPrintf("\r\n");
 
     if (!WriteFile(hSerial, buf, len, &bytesWritten, NULL)) {
         CloseHandle(hSerial);
@@ -92,17 +92,17 @@ void Serial_Thread(LPCWSTR comname)
         }
         if (bytesRead)
         {
+            OutputDebugPrintf("\r\n [BL]--> ");
             count = 0;
             while (bytesRead--)
             {
                 uint32_t hex = dataReceived[count];
-                //OutputDebugPrintf("_%02X", hex);
+                OutputDebugPrintf("%c", hex);
                 if (Handle_cb)
                     Handle_cb(dataReceived[count++]);
                 Sleep(1);
             }
-            //OutputDebugPrintf("\r\n [BL]--> %s\r\n",dataReceived);
-            //OutputDebugPrintf("\r\n");
+            OutputDebugPrintf("\r\n");
         }
     }
 

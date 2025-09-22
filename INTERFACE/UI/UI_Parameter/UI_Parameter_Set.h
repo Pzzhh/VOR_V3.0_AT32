@@ -16,7 +16,7 @@ extern "C"
         uint8_t(*hidden)(uint8_t flag);
 
     }UI_Parameter_Handler;
-    void Mode_init(lv_obj_t* parent);
+    void Mode_init(lv_obj_t* parent, uint8_t isEnOkR);
     uint8_t UI_Parameter_Read(Task_Parameter_Struct* e);
 
 #ifdef __cplusplus

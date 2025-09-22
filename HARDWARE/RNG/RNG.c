@@ -1,5 +1,5 @@
 
-#include "stm32f4xx.h"
+#include "at32f435_437.h"
 #include "RNG.h"
 // 0:none 1:reach
 uint8_t RNG_Generate(void)

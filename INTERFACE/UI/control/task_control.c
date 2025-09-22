@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-24 10:26:50
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2024-09-09 10:44:47
+ * @LastEditTime: 2025-03-28 20:02:31
  * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\INTERFACE\UI\control\task_control.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -12,7 +12,7 @@
 #include "control_Hardware_API.h"
 #include "stdint.h"
 
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 #include "Windows.h"
 #include <stdio.h>
 
@@ -24,6 +24,10 @@
 #include "control_VOR.h"
 #include "control_CONT.h"
 #include "control_OVAR.h"
+#include "control_VHIT.h"
+#include "control_TC.h"
+#include "control_ZERO.h"
+
 #include <stdarg.h>
 
 Task_Parameter_Struct TaskArray[10];
@@ -33,14 +37,60 @@ typedef struct
 	uint32_t remainingTime;
 } Task_Control_Status;
 // static char msg_buffer[50];
-
+#define RKPrint(...)                                                      \
+	{                                                                     \
+		(LR) ? Rk3588_R_Printf(__VA_ARGS__) : Rk3588_L_Printf(__VA_ARGS__); \
+	}
 static Task_control_info* control;
 extern uint8_t Ctrl_Msg_Printf(const char* format,
 	...);
-extern void Rk3588_Printf(const char* strOutputString, ...);
+extern void Rk3588_R_Printf(const char* strOutputString, ...);
 extern void Rk3588_L_Printf(const char* strOutputString, ...);
 
-void RK3588_SendTaskInfo(uint16_t tasksize)
+
+#define Rk3588_Task_Cancel                   \
+	{                                        \
+		control->Rk3588_Flag.Lflag = Cancel; \
+		control->Rk3588_Flag.Rflag = Cancel; \
+	}
+
+
+
+void PrintfInfo(Task_Parameter_Struct* e, char* mousename, uint8_t LR)
+{
+	static const char vorstrList[][10] = { "VOR", "OKR", "VOR_OKR", "VOR_OKRR" };
+	static char timeStamp[20] = "20210101093100";
+
+	const char* vorStr = vorstrList[e->VOR.ExMode];
+	timetyped time = { 0 };
+	Message_Center_Read_prinft("Ctrl", &time, sizeof(time), "ReqTime");
+	sprintf(timeStamp, "%04d%02d%02d%02d%02d%02d",
+		time.date.year, time.date.month, time.date.date,
+		time.date.hour, time.date.min, time.date.sec);
+	switch (e->mode)
+	{
+	case Task_VOR:
+		RKPrint("%s_%s_%s_T%dV%dF%02d", timeStamp, mousename, vorStr, e->VOR.Counter, (int)e->VOR.Vel, (int)(e->VOR.Freq * 10.0f));
+		break;
+	case Task_Continue:
+		RKPrint("%s_%s_CONT_S%dV%d", timeStamp, mousename, e->CONT.Sec, (int)e->CONT.Vel);
+		break;
+	case Task_OVAR:
+		RKPrint("%s_%s_OVAR_S%dV%dI%02d", timeStamp, mousename, e->OVAR.Sec, (int)e->OVAR.Vel, (int)(e->OVAR.Inc_Degree));
+		break;
+	case Task_VHIT:
+		RKPrint("%s_%s_VHIT_T%d%s", timeStamp, mousename, e->VHIT.Counter, (e->VHIT.IsCW) ? "CW" : "CCW");
+		break;
+	case Task_TC:
+		RKPrint("%s_%s_TC_S%dV%d", timeStamp, mousename, e->TC.Counter, e->TC.Vel);
+		break;
+
+	default:
+		break;
+	}
+}
+
+void RK3588_SendTaskInfo(uint16_t tasksize, uint8_t LR)
 {
 	Task_Parameter_Struct* e;
 	char* mousename = (char*)malloc(50);
@@ -48,84 +98,69 @@ void RK3588_SendTaskInfo(uint16_t tasksize)
 	HAL_Get_UI_MouseName(mousename, 50);
 	if (mousename[0] == 0)
 		strncpy(mousename, "unnamed", 50);
-	Rk3588_Printf("&%d", tasksize);
-	Rk3588_L_Printf("&%d", tasksize);
-	for (int i = 0; i < tasksize; i++)
-	{
-		e = &TaskArray[i];
-		switch (e->mode)
-		{
-		case Task_VOR:
-			Rk3588_Printf("&%s_VOR_T%dV%dF%02d", mousename, e->VOR.Counter, (int)e->VOR.Vel, (int)(e->VOR.Freq * 10.0f));
-			Rk3588_L_Printf("&%s_VOR_T%dV%dF%02d", mousename, e->VOR.Counter, (int)e->VOR.Vel, (int)(e->VOR.Freq * 10.0f));
-			break;
-		case Task_Continue:
-			Rk3588_Printf("&%s_CONT_S%dV%d", mousename, e->CONT.Sec, (int)e->CONT.Vel);
-			Rk3588_L_Printf("&%s_CONT_S%dV%d", mousename, e->CONT.Sec, (int)e->CONT.Vel);
-			break;
-		case Task_OVAR:
-			Rk3588_Printf("&%s_OVAR_S%dV%dI%02d", mousename, e->OVAR.Sec, (int)e->OVAR.Vel, (int)(e->OVAR.Inc_Degree));
-			Rk3588_L_Printf("&%s_OVAR_S%dV%dI%02d", mousename, e->OVAR.Sec, (int)e->OVAR.Vel, (int)(e->OVAR.Inc_Degree));
-			break;
-		case Task_VHIT:
-			Rk3588_Printf("&%s_VHIT_T%d", mousename, e->VHIT.Counter);
-			Rk3588_L_Printf("&%s_VHIT_T%d", mousename, e->VHIT.Counter);
-			break;
-		case Task_TC:
-			Rk3588_Printf("&%s_TC_S%dV%d", mousename, e->TC.Sec, e->TC.Vel);
-			Rk3588_L_Printf("&%s_TC_S%dV%d", mousename, e->TC.Sec, e->TC.Vel);
-			break;
-
-		default:
-			break;
-		}
-	}
-	Rk3588_Printf("@");
-	Rk3588_L_Printf("@");
+	(LR) ? Rk3588_R_Printf("filename:") : Rk3588_L_Printf("filename:");
+	/*for (int i = 0; i < tasksize; i++)
+	{*/
+	e = &TaskArray[tasksize];
+	PrintfInfo(e, mousename, LR);
+	//}
+	(LR) ? Rk3588_R_Printf("\r\n") : Rk3588_L_Printf("\r\n");
 	free(mousename);
 }
 
-void RK3588_End_Printf(void)
+void RK3588_End_Printf(uint8_t LR)
 {
-	Rk3588_Printf("finish");
+	(LR) ? Rk3588_R_Printf("finish") : Rk3588_L_Printf("finish");
 }
 
-void RK3588_terminal_Printf(void)
+void RK3588_terminal_Printf(uint8_t LR)
 {
-	Rk3588_Printf("terminal");
+	(LR) ? Rk3588_R_Printf("cancel") : Rk3588_L_Printf("cancel");
+}
+
+void RK3588_SendTestCmd()
+{
+	Rk3588_R_Printf("UART Test\n");
+	Rk3588_L_Printf("UART Test\n");
 }
 
 void RK3588_Initial_Printf(void)
 {
-	Rk3588_Printf("clear");
-	Rk3588_L_Printf("clear");
+	Rk3588_R_Printf("clear\n");
+	Rk3588_L_Printf("clear\n");
+}
+
+void RK3588_pause_Printf(uint8_t LR)
+{
+	(LR) ? Rk3588_R_Printf("pause") : Rk3588_L_Printf("pause");
 }
 
 void RK3588_interrupt_Printf(void)
 {
-	Rk3588_Printf("interrupt");
+	Rk3588_R_Printf("interrupt");
 	Rk3588_L_Printf("interrupt");
 }
 
 void task_interval_handle(int index)
 {
-	const uint32_t waitMillSec = 5000;
-	uint32_t time = ControlGetTick(), remainingTime = 0;
-	// uint16_t len = sprintf(msg_buffer, "Interval: ID:%d", index);
-	// Message_Center_Send("PAGE1", 0, msg_buffer, len);
+	const uint32_t waitMillSec = 5000, delayMS = 100;
+	uint16_t count = waitMillSec / delayMS - 1;
+	// int32_t time = ControlGetTick(), remainingTime = 0;
+	//  uint16_t len = sprintf(msg_buffer, "Interval: ID:%d", index);
+	//  Message_Center_Send("PAGE1", 0, msg_buffer, len);
 	/*  Message_Center_Send_prinft(
 		  "PAGE1", 0, 0,
 		  "Interval: ID:%d", index);*/
 		  /*HAL_Set_UI_Page1_Msg("Interval: ID:%d", index);*/
-	while (remainingTime < waitMillSec)
+	while (count)
 	{
-		remainingTime = ControlGetTick() - time;
-		Ctrl_Msg_Printf("interval %ds", remainingTime / 1000);
+		Ctrl_Msg_Printf("interval %ds", count / 10 + 1);
+		count--;
 		if (control->State_Bit.Exit) // for exit
 		{
 			return;
 		}
-		ControlDelay(100);
+		ControlDelay(delayMS);
 	}
 }
 
@@ -140,7 +175,7 @@ uint8_t Task_control_Begin(Task_control_info* e)
 		return 0;
 	e->taskArray = TaskArray;
 	e->State_Bit.flag = 0;
-	e->State_Bit.Init = 1;
+	e->State_Bit.isRun = 1;
 	return 1;
 }
 
@@ -150,26 +185,50 @@ uint8_t Task_control_ReqStop(Task_control_info* e)
 	{
 		return 0;
 	}
+	e->State_Bit.reqPause = 0;
 	e->State_Bit.Exit = 1;
 	return 1;
+}
+
+uint8_t Task_control_ReqPause(Task_control_info* e)
+{
+	if (e->State_Bit.IsRunning == 0)
+	{
+		return 0;
+	}
+	e->State_Bit.reqPause = !e->State_Bit.reqPause;
+	return 1;
+}
+
+void Task_Delay_Msg(char* format, int sec)
+{
+	for (int i = 0; i < sec; i++)
+	{
+		Ctrl_Msg_Printf(format, sec - i);
+		SaftExitDelay(1000, 0);
+	}
 }
 
 void Task_control_handler(Task_control_info* e)
 {
 	uint8_t Rk3588_ReadyFlag_1 = 0, Rk3588_ReadyFlag_2 = 0;
+	uint8_t skip_loop = 0;
 	if (e == 0)
 		return;
 	control = e;
-	e->State_Bit.Init = 1;
-	e->State_Bit.Init = 0;
-	e->State_Bit.ExInit = 0;
+	e->State_Bit.isRun = 0;
+	e->State_Bit.WaitRk = 0;
 	Ctrl_Msg_Printf(" ");
+	//ZEROControlFunction(1);
+	HAL_Beep_Enable(500);
 	// uint16_t len = 0;
 BEGIN_POS:
 	// get all task need to implement
+	e->State_Bit.isRun = 0;
+	e->State_Bit.IsRunning = 0;
 	while (1)
 	{
-		if (e->State_Bit.Init == 1)
+		if (e->State_Bit.isRun == 1)
 		{
 			e->State_Bit.flag = 0;
 			e->Error_Bit.flag = 0;
@@ -184,23 +243,26 @@ BEGIN_POS:
 	}
 
 	e->State_Bit.IsRunning = 1;
+	e->State_Bit.isPause = 0;
+	e->Rk3588_Flag.WifiMsgFlag = 0;
+	e->Rk3588_Flag.isWifiCauseStop = 0;
+	e->currentCount = 0;
+	skip_loop = 0;
 
 	uint16_t task_size = e->taskCount;
-	RK3588_SendTaskInfo(task_size);
-
-	for (int i = 0; i < task_size; i++)
+	Ctrl_Msg_Printf(" ");
+	HAL_Outage_Log(1,0);
+	ZEROControlFunction(1);
+	int i = 0;
+	if(e->StartWithIndex < task_size)
+		i = e->StartWithIndex;
+	for (; i < task_size; i++)
 	{
+		HAL_Outage_Log(1, i);
 		Task_Parameter_Struct* task = &e->taskArray[i];
 		e->currentCount = i;
-		e->currentparcent = 0;
-		e->UI_para.state = Interval;
-		task_interval_handle(i);
-		if (e->State_Bit.Exit)
-		{
-			RK3588_terminal_Printf();
-			break;
-		}
-
+		e->UI_para.state = taskInv;
+		//task_interval_handle(i);
 		uint8_t isretract = 1;
 		switch (task->mode)
 		{
@@ -216,16 +278,54 @@ BEGIN_POS:
 				isretract = 0;
 			OvarControlFunction(task, e, isretract);
 			break;
+		case Task_TC:
+			TcControlFunction(task, e);
+			break;
+		case Task_VHIT:
+			VHITControlFunction(task, e);
+			break;
 		default:
 			break;
 		}
+		e->State_Bit.isPause = 0;
+		if (e->Dev_Mode_Bit.Zero == 0)
+			ZEROControlFunction(0);
+		if (e->Rk3588_Flag.isUsingBlock)
+		{
+			if (e->Rk3588_Flag.WifiMsgFlag != 3)
+			{
+				HAL_Beep_Enable(2000);
+				Message_Center_Send_prinft("page1", 0,
+					0,
+					"NoticeWifierror %d", e->Rk3588_Flag.WifiMsgFlag);
+				skip_loop = 1;
+				break;
+			}
+			e->Rk3588_Flag.WifiMsgFlag = 0;
+		}
+		if (e->State_Bit.Exit)
+		{
+			Rk3588_Task_Cancel;
+			break;
+		}
+
 	}
-	RK3588_End_Printf();
-	Ctrl_Msg_Printf(" ");
+	Ctrl_Msg_Printf("Centering");
+	HAL_Outage_Log(0,0);
 	// len = sprintf(msg_buffer, "End");
 	// Message_Center_Send("PAGE1", 0, msg_buffer, len);
 	/*HAL_Set_UI_Page1_Msg("End");*/
+	uint8_t exitflag = e->State_Bit.Exit;
+	e->State_Bit.IsRunning = 0;
 	e->State_Bit.flag = 0;
 	e->Error_Bit.flag = 0;
+	if (exitflag == 0 &&
+		e->Dev_Mode_Bit.LoopTest == 1 && skip_loop == 0)
+	{
+		SaftExitDelay(5000, 0);
+		Message_Center_Send_prinft("Ctrl", 0,
+			0,
+			"ReqStrat");
+	}
 	goto BEGIN_POS;
 }

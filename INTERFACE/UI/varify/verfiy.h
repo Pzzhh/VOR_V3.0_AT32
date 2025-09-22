@@ -6,7 +6,7 @@ extern "C"
 {
 #endif //
 #include "stdint.h"
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 #include "Windows.h"
 #include <stdio.h>
 #endif // use_windows

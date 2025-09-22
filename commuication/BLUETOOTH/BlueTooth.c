@@ -331,7 +331,7 @@ DecodeFuntionReturn Decode_UploadTask_Cmd(uint8_t* bytes)
 		Task_Info_Package(task, ReadID + 1, &buf[1]);
 	}
 #endif
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 	uint32_t id = GetCurrentThreadId();
 	//OutputDebugPrintf("\r\nID %ld\r\n", id);
 #endif
@@ -387,39 +387,44 @@ DecodeFuntionReturn Decode_OtherCmd(uint8_t* msg)
 	token = strtok(NULL, "$"); //Get Msg
 	if (token == NULL)
 		return Cmd_error;
+
+	const int RxMsgBufSize = 50;
+	char* RxMsg = message_malloc(RxMsgBufSize);
+	memset(RxMsg, 0, RxMsgBufSize);
+	const char errorMsg[] = "errorMsg\r\n";
+	const char okMsg[] = "W OK\r\n";
+	memcpy(RxMsg, okMsg, sizeof(okMsg));
+	uint8_t Nack = 0;
+
 	if (RWdir == 1) //Write stage
 	{
 		Message_Center_Send_prinft(Port, 0, 0,
 			"%s", token);
+
 	}
 	else
 	{
-		const int RxMsgBufSize = 50;
-		char* RxMsg = message_malloc(RxMsgBufSize);
-		memset(RxMsg, 0, RxMsgBufSize);
-		const char errorMsg[] = "errorMsg\r\n";
-		uint8_t Nack = Message_Center_Read_prinft(Port, RxMsg, RxMsgBufSize,
+		Nack = Message_Center_Read_prinft(Port, RxMsg, RxMsgBufSize,
 			"%s", token);
-		uint16_t RxMsgLen = strlen(RxMsg);
-		memmove(&RxMsg[1], &RxMsg[0], RxMsgLen);
-		RxMsg[0] = '(';
-		RxMsgLen = strlen(RxMsg);
-		if (RxMsgLen <= RxMsgBufSize - 2)
-			memcpy(&RxMsg[RxMsgLen], ")", 1);
-
-		if (Nack == 0)
-			SendCb(RxMsg, strlen(RxMsg));
-		else
-			SendCb(errorMsg, (uint8_t *)strlen(errorMsg));
-		message_free(RxMsg);
 	}
+	uint16_t RxMsgLen = strlen(RxMsg);
+	memmove(&RxMsg[1], &RxMsg[0], RxMsgLen);
+	RxMsg[0] = '(';
+	RxMsgLen = strlen(RxMsg);
+	if (RxMsgLen <= RxMsgBufSize - 2)
+		memcpy(&RxMsg[RxMsgLen], ")", 1);
+	SendCb(RxMsg, strlen(RxMsg));
+	message_free(RxMsg);
 }
 
 uint8_t BLctrl_Vor_Para_pkg(char* msg, Task_Parameter_Struct* par)
 {
+	extern uint8_t VOR_exam_Para_Check(Task_Parameter_Struct * e);
 	par->mode = Task_VOR;
 	uint8_t res = sscanf(msg, "vor,%d,%f,%f",
 		&par->VOR.Counter, &par->VOR.Vel, &par->VOR.Freq);
+	if (VOR_exam_Para_Check(par) == 0)
+		return 0;
 	if (res == 3)
 		return 1;
 	else
@@ -428,9 +433,12 @@ uint8_t BLctrl_Vor_Para_pkg(char* msg, Task_Parameter_Struct* par)
 
 uint8_t BLctrl_CNT_Vor_Para_pkg(char* msg, Task_Parameter_Struct* par)
 {
+	extern uint8_t Cont_exam_Para_Check(Task_Parameter_Struct * e);
 	par->mode = Task_Continue;
 	uint8_t res = sscanf(msg, "cont,%d,%f",
 		&par->CONT.Sec, &par->CONT.Vel);
+	if (Cont_exam_Para_Check(par) == 0)
+		return 0;
 	if (res == 2)
 		return 1;
 	else
@@ -440,9 +448,12 @@ uint8_t BLctrl_CNT_Vor_Para_pkg(char* msg, Task_Parameter_Struct* par)
 uint8_t BLctrl_OVAR_Para_pkg(char* msg, Task_Parameter_Struct* par)
 {
 	/*char* token = strtok(msg, ',');*/
+	extern uint8_t Ovar_exam_Para_Check(Task_Parameter_Struct * e);
 	par->mode = Task_OVAR;
 	uint8_t res = sscanf(msg, "ovar,%d,%f,%f",
 		&par->OVAR.Sec, &par->OVAR.Vel, &par->OVAR.Inc_Degree);
+	if (Ovar_exam_Para_Check(par) == 0)
+		return 0;
 	if (res == 3)
 		return 1;
 	else
@@ -478,7 +489,6 @@ void BLctrl_Check_task_Msg(char* msg)
 			}
 		}
 		token = strstr(token, ",");
-		token++;
 		tokenCount++;
 	}
 
@@ -495,19 +505,19 @@ void BLctrl_Set_Task_Size_Msg()
 uint8_t BLctrl_Read_Handle(uint8_t* msg, uint16_t msg_size,
 	uint8_t* src, uint16_t SrcSize)
 {
-	if (Msg_COMPARE("savetask,", msg))
+	if (Msg_COMPARE("addtask,", msg))
 	{
 		BLctrl_Check_task_Msg(msg);
 		//ControlDelay(1);
-		const char str1[] = "savetask,OK";
+		const char str1[] = "addtask,OK";
 		memcpy(src, str1, strlen(str1));
 		return 0;
 	}
-	if (Msg_COMPARE("setsize", msg))
+	if (Msg_COMPARE("delAll", msg))
 	{
 		BLctrl_Set_Task_Size_Msg();
 		//ControlDelay(50);
-		const char str1[] = "setsize,OK";
+		const char str1[] = "delAll,OK";
 		memcpy(src, str1, strlen(str1));
 		return 0;
 	}
@@ -546,7 +556,7 @@ void usart_protocol_InterruptHandle(uint8_t dr) // 串口1中断服务程序
 			current_Index = 0;
 			BLisupdata = 1;
 		}
-		else 
+		else
 		{
 			bytes[current_Index++] = dr;
 		}

@@ -1,3 +1,11 @@
+/*
+ * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @Date: 2025-09-11 15:50:36
+ * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @LastEditTime: 2025-09-22 11:18:53
+ * @FilePath: \Slave_At32\HARDWARE\TOUCH\ctiic.h
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 #ifndef __MYCT_IIC_H
 #define __MYCT_IIC_H
 #include "at32f435_437.h"
@@ -19,20 +27,22 @@
 // 2,修改CT_IIC_Wait_Ack函数,以支持MDK的-O2优化.
 //////////////////////////////////////////////////////////////////////////////////
 
-// IO方向设置
-#define CT_SDA_IN()                 \
-    {                               \
-        GPIOF->cfgr_bit.iomc11 = 0; \
-    } // PF11输入模式
-#define CT_SDA_OUT()                \
-    {                               \
-        GPIOF->cfgr_bit.iomc11 = 1; \
-    } // PF11输出模式
-// #define CT_SDA_IN()  {GPIOF->MODER&=~(3<<(2*11));GPIOF->MODER|=0<<2*11;}	//PF11输入模式
-// #define CT_SDA_OUT() {GPIOF->MODER&=~(3<<(2*11));GPIOF->MODER|=1<<2*11;} 	//PF11输出模式
+// IO方向设置 (AT32: 使用GPIOF->cfgr配置模式位)
+#define CT_SDA_IN()                       \
+    do                                    \
+    {                                     \
+        GPIOF->cfgr &= ~(3u << (2 * 11)); \
+        GPIOF->cfgr |= (0u << (2 * 11));  \
+    } while (0) // PF11输入模式
+#define CT_SDA_OUT()                      \
+    do                                    \
+    {                                     \
+        GPIOF->cfgr &= ~(3u << (2 * 11)); \
+        GPIOF->cfgr |= (1u << (2 * 11));  \
+    } while (0) // PF11输出模式
 // IO操作函数
-#define CT_IIC_SCL GPIOB->odt_bit.odt0 // SCL
-#define CT_IIC_SDA GPIOF->odt_bit.odt11 // SDA
+#define CT_IIC_SCL GPIOB->odt_bit.odt0   // SCL
+#define CT_IIC_SDA GPIOF->odt_bit.odt11  // SDA
 #define CT_READ_SDA GPIOF->idt_bit.idt11 // 输入SDA
 
 // IIC所有操作函数

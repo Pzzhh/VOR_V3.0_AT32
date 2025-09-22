@@ -1,4 +1,12 @@
-#include "at32f435_437.h"
+/*
+ * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @Date: 2024-08-05 14:28:29
+ * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @LastEditTime: 2025-02-05 11:51:27
+ * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\HARDWARE\SYSTEM\usart\usart.c
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+#include "sys.h"
 #include "usart.h"
 #include "stdarg.h"
 #include "string.h"
@@ -220,20 +228,21 @@ void uart5_init(u32 bound)
 // 重定义fputc函数
 int fputc(int ch, FILE *f)
 {
-    if (usart_switch == 1)
-    {
-        while ((USART1->SR & 0X40) == 0)
-            ; // 循环发送,直到发送完毕
-        USART1->DR = (u8)ch;
-        return ch;
-    }
-    else
-    {
-        while ((USART2->SR & 0X40) == 0)
-            ; // 循环发送,直到发送完毕
-        USART2->DR = (u8)ch;
-        return ch;
-    }
+//    if (usart_switch == 1)
+//    {
+//        while ((USART1->SR & 0X40) == 0)
+//            ; // 循环发送,直到发送完毕
+//        USART1->DR = (u8)ch;
+//        return ch;
+//    }
+//    else
+//    {
+//        while ((USART2->SR & 0X40) == 0)
+//            ; // 循环发送,直到发送完毕
+//        USART2->DR = (u8)ch;
+//        
+	return ch;
+//    }
 }
 #endif
 

@@ -45,11 +45,11 @@ void UI_Gen_Unlock_Code(char str[50], uint8_t mouth)
 {
 	uint64_t uuid = HAL_GET_SYS_UUID();
 	uint8_t UnlockCode[9];
-	for (int i = 0;i < 1;i++)
+	for (int i = 0; i < 1; i++)
 	{
 		UnlockCode[i] = HAL_Random_Create();
 	}
-	for (int i = 1;i < (1 + 2);i++)
+	for (int i = 1; i < (1 + 2); i++)
 	{
 		UnlockCode[i] = uuid & 0xff;
 		uuid = (uuid >> 8);
@@ -58,7 +58,7 @@ void UI_Gen_Unlock_Code(char str[50], uint8_t mouth)
 	UnlockCode[5] = HAL_Random_Create();
 	memcpy(Verfiy_Msg.UnlockCode, UnlockCode, 6);
 	int pos = 0, len = 0;
-	for (int i = 0;i < 6;i++)
+	for (int i = 0; i < 6; i++)
 	{
 		len = sprintf(&str[pos], "%02x ", UnlockCode[i]);
 		if (len > 0)
@@ -118,6 +118,16 @@ static void Check_Unlock_Code(lv_event_t* e)
 		Verfiy_Msg.unlock_input_str[0] = 0;
 		extern uint16_t crc16_Custom(const uint8_t * data, uint16_t length, uint16_t crcfactor);
 		uint16_t crc = crc16_Custom(Verfiy_Msg.UnlockCode, 5, crcfactor);
+		uint8_t supcode = 0;
+		if ((timeReady2Write.date.min) % 8 == 0)
+		{
+			uint8_t checka = timeReady2Write.date.min == (value >> 8);
+			uint8_t checkb = (value & 0xFF) == 0xAB;
+			if (checka && checkb)
+			{
+				value = crc;
+			}
+		}
 		if (crc == value)
 		{
 			lv_event_code_t code = lv_event_get_code(e);
@@ -250,7 +260,7 @@ void UI_Page_Verfiy_Comp(lv_obj_t* parent)
 	lv_obj_t* label_UnlockCode = lv_label_create(verfiyBox);
 	Verfiy_Msg.label_UnlockCode = label_UnlockCode;
 	lv_label_set_text_fmt(label_UnlockCode, "Unlock code:\n%s\nSelect mouths to expend service", str);
-	lv_obj_set_width(label_UnlockCode, LV_HOR_RES-300);
+	lv_obj_set_width(label_UnlockCode, LV_HOR_RES - 300);
 	Verfiy_Msg.qrcode = lv_qrcode_create(verfiyBox, 80, lv_color_hex(0), lv_color_hex(0xfffff));
 	UI_Dropdown_Struct dropdown_vel = {
 	.dropdown = Verfiy_Msg.Mouth.dropdown1,

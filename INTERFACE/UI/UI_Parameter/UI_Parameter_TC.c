@@ -160,3 +160,14 @@ static uint8_t UI_Get(Task_Parameter_Struct *e)
 
     return 1;
 }
+
+
+
+uint8_t TC_exam_Para_Check(Task_Parameter_Struct* e)
+{
+    if (e->TC.Counter > 1000 && e->TC.Counter != 0)
+        return 0;
+    if (e->TC.Vel > 360 || e->TC.Vel < -360)
+        return 0;
+    return 1;
+}

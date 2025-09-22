@@ -1,8 +1,7 @@
 #ifndef __LCD_H
 #define __LCD_H		
-//#include "at32f435_437.h"	 
-//#include "stdlib.h" 
-#include "at32f435_437.h"
+#include "at32f435_437.h" 
+#include "stdlib.h" 
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //ALIENTEK STM32F407开发板
@@ -98,7 +97,7 @@ extern u16  BACK_COLOR; //背景颜色.默认为白色
 
 //////////////////////////////////////////////////////////////////////////////////	 
 //-----------------LCD端口定义---------------- 
-#define	LCD_LED PBout(15)  		//LCD背光    		 PB15 	    
+#define	LCD_LED GPIOB->odt_bit.odt15  		//LCD背光    		 PB15 	    
 //LCD地址结构体
 typedef struct
 {

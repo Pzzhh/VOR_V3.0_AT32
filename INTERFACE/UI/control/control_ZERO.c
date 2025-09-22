@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-22 16:00:07
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-03-28 20:04:51
+ * @LastEditTime: 2025-09-09 15:42:15
  * @FilePath: \USERd:\workfile\é¡¹ç›®3 vor\software\TC_V2.0\INTERFACE\UI\control\control_TC.c
  * @Description: è¿™æ˜¯é»˜è?¤è?¾ç½®,è¯·è?¾ç½®`customMade`, æ‰“å¼€koroFileHeaderæŸ¥çœ‹é…ç½® è¿›è?Œè?¾ç½®: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -12,7 +12,7 @@
 #include "control.h"
 #include "stdint.h"
 #define use_windows
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 #include "Windows.h"
 #include <stdio.h>
 #else
@@ -28,22 +28,22 @@ struct
 
 uint8_t HAL_Slave_ZERO_Init(uint8_t isinit)
 {
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 	zero_info.isskip = 1;
 #else
 	Zero_Machine_Init(isinit);
-#endif // !STM32F40_41xxx
+#endif // !ATM32F43_xx
 
 	return 1;
 }
 
 uint8_t HAL_Slave_Get_Flag()
 {
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 	return 1;
 #else
 	return Zero_Machine_get_flag();
-#endif // !STM32F40_41xxx
+#endif // !ATM32F43_xx
 }
 
 uint8_t ZEROControlFunction(uint8_t isinit)

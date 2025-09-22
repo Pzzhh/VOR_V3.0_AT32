@@ -10,9 +10,10 @@
 #include "control_Hardware_API.h"
 #include "../other/system_function.h"
 #include "control.h"
+#include "task_control.h"
 #include "stdint.h"
 #define use_windows
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 #include "Windows.h"
 #include <stdio.h>
 #else
@@ -32,32 +33,32 @@ struct
 
 uint8_t HAL_Slave_TC_Init(Task_Parameter_Struct* e)
 {
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 	tc_info.time = ControlGetTick();
 	tc_info.SetCount = e->TC.Counter;
 	tc_info.flag_pause = 0;
 #else
 	if (e->mode == Task_TC)
-		TC_Machine_Init(e->TC.Counter,e->TC.Vel);
-#endif // !STM32F40_41xxx
+		TC_Machine_Init(e->TC.Counter, e->TC.Vel);
+#endif // !ATM32F43_xx
 
 	return 1;
 }
 
 uint8_t HAL_Slave_TC_Stop(void)
 {
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 	uint32_t currentCount = (ControlGetTick() - tc_info.time) / singalCount;
 	tc_info.SetCount = currentCount + 1;
 #else
 	TC_Machine_Stop();
-#endif // !STM32F40_41xxx
+#endif // !ATM32F43_xx
 	return 1;
 }
 
 uint8_t HAL_Slave_TC_Pause(uint8_t enable)
 {
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 	if (enable)
 	{
 		tc_info.flag_pause = 1;
@@ -70,13 +71,13 @@ uint8_t HAL_Slave_TC_Pause(uint8_t enable)
 	}
 #else
 	TC_Machine_Pause();
-#endif // !STM32F40_41xxx
+#endif // !ATM32F43_xx
 	return 1;
 }
 
 uint8_t HAL_Slave_TC_Get_State(uint32_t* remainingCount, uint32_t* parcent)
 {
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 	if (tc_info.flag_pause)
 		return Imp_paused;
 	uint32_t currentCount = (ControlGetTick() - tc_info.time) / singalCount;
@@ -96,7 +97,7 @@ uint8_t HAL_Slave_TC_Get_State(uint32_t* remainingCount, uint32_t* parcent)
 		*parcent = CurrentCount * 100 / counterReq;
 	*remainingCount = counterReq - CurrentCount;
 	return res;
-#endif // !STM32F40_41xxx
+#endif // !ATM32F43_xx
 }
 
 
@@ -104,18 +105,16 @@ uint8_t HAL_Slave_TC_Get_State(uint32_t* remainingCount, uint32_t* parcent)
 uint8_t TcControlFunction(Task_Parameter_Struct* task, Task_control_info* e)
 {
 	const int camWaitTime_s = 5;
-	e->UI_para.state = ready;
 	MYPRINTF("\r\n vor begin");
 	MYPRINTF("\r\n");
 	// æ‰§è?Œéƒ¨åˆ?
 	MYPRINTF("\r\n");
 Pause_Resume:
+	e->UI_para.state = taskinit;
+	Rk3588_Send_Task_Array(e);
+	Task_Delay_Msg("Rec After %d", 5);
 	uint8_t CAM_State = HAL_CAM_REC_Set(1);
-	for (int i = 0; i < camWaitTime_s; i++)
-	{
-		(CAM_State == 0 && i < 2) ? Ctrl_Msg_Printf("camera error") : Ctrl_Msg_Printf("Run after %ds", camWaitTime_s - i);
-		SaftExitDelay(1000, 0);
-	}
+	Task_Delay_Msg("Run After %d", 10);
 	/*motor set running configure*/
 	HAL_Slave_TC_Init(task);
 	/*notice control thread current state*/
@@ -132,12 +131,13 @@ Pause_Resume:
 		TC_machine_flag = HAL_Slave_TC_Get_State(&count, &parcent);
 		if (LastCount != count && TC_machine_flag == Imp_running)
 		{
-			Ctrl_Msg_Printf("%d:%s Done:%d%%", e->currentCount+1,"TC", parcent);
+			Ctrl_Msg_Printf("%d:%s Done:%d%%", e->currentCount + 1, "TC", parcent);
 			LastCount = count;
 		}
 		if (e->State_Bit.Exit) // for exit
 		{
-			Ctrl_Msg_Printf("%d:%s #A52A2A Terminated#", e->currentCount+1,"TC");
+			Ctrl_Msg_Printf("%d:%s #A52A2A Terminated#", e->currentCount + 1, "TC");
+			e->UI_para.state = taskTerminal;
 			HAL_Slave_TC_Stop();
 		}
 		if (e->State_Bit.reqPause == 1)
@@ -145,17 +145,20 @@ Pause_Resume:
 			if (TC_machine_flag == Imp_running)
 			{
 				HAL_Slave_TC_Pause(1);
-				Ctrl_Msg_Printf("%d:%s Pause", e->currentCount+1,"TC");
+				Ctrl_Msg_Printf("%d:%s Pause", e->currentCount + 1, "TC");
 				Rk3588_Send_Pause;
+				e->UI_para.state = taskPause;
 				e->State_Bit.isPause = 1;
 				// if (CamIsStop == 0)
 				// 	HAL_CAM_REC_Set(1);
 				// CamIsStop = 1;
-				HAL_CAM_REC_Set(1);
+				HAL_CAM_REC_Set(0);
 			}
 			else if (TC_machine_flag == Imp_paused)
 			{
 				e->State_Bit.isPause = 0;
+				Task_Delay_Msg("Resume After %d", 5);
+				//e->UI_para.state = taskruning;
 				goto Pause_Resume;
 				//Ctrl_Msg_Printf("%d:%s Done:%d%%", e->currentCount,"TC", parcent);
 				//HAL_Slave_TC_Pause(0);
@@ -170,17 +173,17 @@ Pause_Resume:
 		MYPRINTF("\r");
 	}
 	if (e->State_Bit.Exit == 0)
-		Ctrl_Msg_Printf("%d:%s Done:100%%", e->currentCount+1,"TC");
+		Ctrl_Msg_Printf("%d:%s Done:100%%", e->currentCount + 1, "TC");
 	/*one sec for cam stop*/
 	SaftExitDelay(1000, 0);
 	if (CamIsStop == 0)
-		CAM_State = HAL_CAM_REC_Set(1);
+		CAM_State = HAL_CAM_REC_Set(0);
 	if (CAM_State == 0)
 	{
 		Ctrl_Msg_Printf("CAM ERROR");
 	}
 	/*--one sec for cam stop*/
 	MYPRINTF("\r\n vor end");
-	e->UI_para.state = end;
+	e->UI_para.state = taskend;
 	return 0;
 }

@@ -337,7 +337,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>AT32F435ZMT7,USE_STDPERIPH_DRIVER,AT_START_F435_V1</Define>
+              <Define>AT32F435ZMT7,USE_STDPERIPH_DRIVER,AT_START_F435_V1,ATM32F43_xx</Define>
               <Undefine></Undefine>
               <IncludePath>.\libraries\drivers\inc;.\inc;.\libraries\cmsis\cm4\core_support;.\libraries\cmsis\cm4\device_support;.\middleLib\freertos\source\include;.\middleLib\freertos\source\portable\memmang;.\middleLib\freertos\source\portable\rvds\ARM_CM4F;.\cfg;.\HARDWARE\SYSTEM\delay</IncludePath>
             </VariousControls>

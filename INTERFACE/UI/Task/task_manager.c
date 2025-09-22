@@ -38,6 +38,13 @@ struct
 struct
 {
 	Control_flag flag;
+	uint16_t len;
+	Task_Parameter_Struct* info_pt;
+} Control_Reload_Task;
+
+struct
+{
+	Control_flag flag;
 	uint16_t fouce_index;
 	uint8_t isSave_Create;
 	Task_Parameter_Struct src; // src
@@ -74,6 +81,19 @@ uint8_t Task_manager_Req_add(uint32_t handleID,
 	Control_Add_Task.fouce_index = fouce_index;
 	Control_Add_Task.info = info;
 	Control_Add_Task.flag = Flag_required;
+	return normal;
+}
+
+uint8_t Task_manager_Req_Reload(uint32_t handleID,
+	uint16_t len,
+	Task_Parameter_Struct* info)
+{
+	//if (HandleID != handleID)
+	//	return wrong_handleID;
+	// 看看这么检查 fouce_index
+	Control_Reload_Task.len = len;
+	Control_Reload_Task.info_pt = info;
+	Control_Reload_Task.flag = Flag_required;
 	return normal;
 }
 
@@ -136,6 +156,10 @@ uint8_t Task_manager_Req_Move(uint32_t handleID,
 	if (HandleID != handleID)
 		return wrong_handleID;
 	if (swap1 >= swap2)
+		return wrong_para;
+	int TaskLen = Task_Stroage_GetSize();
+	if(swap1>= TaskLen ||
+		swap2 >= TaskLen)
 		return wrong_para;
 	Control_move_Task.swap1 = swap1;
 	Control_move_Task.swap2 = swap2;
@@ -208,6 +232,59 @@ void task_manager_Add_Ack()
 				0,
 				"ERROR");
 		}
+		return;
+	}
+}
+
+void task_manager_Reload_Ack()
+{
+	int i = 0;
+	static Task_Parameter_Struct* info_pt_Array[15];
+
+	if (Control_Reload_Task.flag == Flag_required)
+	{
+		isupdata = 1;
+		Task_Stroage_delAll();
+		for (i = 0; i < Control_Reload_Task.len; i++)
+		{
+			info_pt_Array[i] = Task_Stroage_Insert(Control_Reload_Task.info_pt[i], i);
+			if (info_pt_Array[i] == 0)
+			{
+				break;
+			}
+		}
+		if (i == Control_Reload_Task.len)
+			Control_Reload_Task.flag = Flag_OKNE; // 让参数继续运行
+		else
+			Control_Reload_Task.flag = Flag_Error;
+		if (Control_Reload_Task.flag == Flag_OKNE)
+		{
+			Message_Center_Send_prinft(task_ID,
+				(uint8_t*)&info_pt_Array,
+				sizeof(info_pt_Array),
+				"SYNC %d", Control_Reload_Task.len);
+		}
+		else
+		{
+			Task_Stroage_delAll();
+		}
+		//if (Control_Add_Task.info_pt != 0)
+		//	Control_Add_Task.flag = Flag_OKNE; // 让参数继续运行
+		//else
+		//	Control_Add_Task.flag = Flag_Error;
+		//if (Control_Add_Task.flag == Flag_OKNE)
+		//{
+		//	Message_Center_Send_prinft(task_ID,
+		//		(uint8_t*)Control_Add_Task.info_pt,
+		//		sizeof(Control_Add_Task.info_pt),
+		//		"ADD %d", index);
+		//}
+		//else
+		//{
+		//	Message_Center_Send_prinft(task_ID, 0,
+		//		0,
+		//		"ERROR");
+		//}
 		return;
 	}
 }
@@ -403,6 +480,7 @@ void task_manager_Handle()
 	task_manager_Save_Ack();
 	task_manager_Move_Ack();
 	task_manager_Set_Ack();
+	task_manager_Reload_Ack();
 	// task_manager_Req_Info();//
 }
 

@@ -33,7 +33,7 @@
 #ifndef __RTC_H
 #define __RTC_H
 
-#include "at32f435_437.h"
+#include "sys.h"
 
 
 uint8_t rtc_init(void);     /* ≥ı ºªØRTC */

@@ -38,17 +38,6 @@ extern "C"
 		uint8_t SrcSize,
 		const char* format,
 		...);
-	uint8_t Message_Center_Read_Raw(
-		const char* name,
-		void* Src,
-		uint8_t SrcSize,
-		char* Msg);
-
-	uint8_t Message_Center_Send_Raw(
-		const char* name,
-		void* Src,
-		uint8_t SrcSize,
-		char* Msg);
 
 	uint8_t Message_Center_Send_prinft(
 		const char* name,

@@ -2,13 +2,13 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
  * @Date: 2025-09-11 15:50:36
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-09-11 16:15:04
+ * @LastEditTime: 2025-09-22 11:46:20
  * @FilePath: \Slave_At32\HARDWARE\TOUCH\ft5206.h
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @Description: 这是默认设置,请设C`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #ifndef __FT5206_H
 #define __FT5206_H	
-#include "at32f435_437.h"	
+#include "sys.h"	
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //ALIENTEK STM32开发板
@@ -26,8 +26,8 @@
 
 //与电容触摸屏连接的芯片引脚(未包含IIC引脚) 
 //IO操作函数	 
-#define FT_RST    				PCout(13)	//FT5206复位引脚
-#define FT_INT    				PBin(1)		//FT5206中断引脚	
+#define FT_RST    				GPIOC->odt_bit.odt13 //FT5206复位引脚
+#define FT_INT    				GPIOB->idt_bit.idt1		//FT5206中断引脚	
 
 //I2C读写命令	
 #define FT_CMD_WR 				0X70    	//写命令

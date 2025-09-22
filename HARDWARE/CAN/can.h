@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
  * @Date: 2024-08-05 14:28:29
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-09-11 16:26:42
+ * @LastEditTime: 2024-09-19 11:15:19
  * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\HARDWARE\CAN\can.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -32,8 +32,8 @@
 
 #ifndef __CAN_H
 #define __CAN_H
-#include "at32f435_437.h"
-// #include "../SYSTEM/sys/sys.h"
+
+#include "../SYSTEM/sys/sys.h"
 
 /******************************************************************************************/
 /* CAN 引脚 定义 */
@@ -72,6 +72,6 @@ uint8_t can_receive_msg(uint32_t id, uint8_t *buf);                             
 uint8_t can_send_msg(uint32_t id, uint8_t *msg, uint8_t len);                           /* CAN发送数据 */
 uint8_t can_init(uint8_t tsjw, uint8_t tbs2, uint8_t tbs1, uint16_t brp, uint8_t mode); /* CAN初始化 */
 
-extern void (*can_rx_handler)(can_rx_message_type *msg);
+extern void (*can_rx_handler)(CanRxMsg *msg);
 
 #endif

@@ -17,7 +17,7 @@
 #define ONE_BUFFER 1
 #define TWO_BUFFER 0
 
-#define COLOR_SIZE         (300*100)
+#define COLOR_SIZE         (150*100)
 
 //#define buf_1 (lv_color_t*)((u32)(0x68000000))
 /**********************
@@ -46,7 +46,7 @@ static void gpu_fill(lv_color_t * dest, uint32_t length, lv_color_t color);
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
-
+ static lv_disp_drv_t disp_drv;                         /*Descriptor of a display driver*/
 void lv_port_disp_init(void)
 {
     /*-------------------------
@@ -60,13 +60,14 @@ void lv_port_disp_init(void)
     /* Example for 1) */
     static lv_disp_draw_buf_t draw_buf_dsc_1;
     static lv_color_t buf_1[COLOR_SIZE];                          /*A buffer for 10 rows*/
-    lv_disp_draw_buf_init(&draw_buf_dsc_1, buf_1, NULL, COLOR_SIZE);   /*Initialize the display buffer*/
+     static lv_color_t buf_2[COLOR_SIZE];                          /*A buffer for 10 rows*/
+    lv_disp_draw_buf_init(&draw_buf_dsc_1, buf_1, buf_2, COLOR_SIZE);   /*Initialize the display buffer*/
 
     /*-----------------------------------
      * Register the display in LittlevGL
      *----------------------------------*/
 
-     static lv_disp_drv_t disp_drv;                         /*Descriptor of a display driver*/
+    
     lv_disp_drv_init(&disp_drv);                    /*Basic initialization*/
 
     /*Set up the functions to access to your display*/
@@ -104,16 +105,22 @@ static void disp_init(void)
 {
     /*You code here*/
 }
-
+lv_disp_drv_t * complete_disp_drv;
+void LCD_fill_complete_Recall()
+{
+    lv_disp_flush_ready(complete_disp_drv);
+}
 /* Flush the content of the internal buffer the specific area on the display
  * You can use DMA or any hardware acceleration to do this operation in the background but
  * 'lv_disp_flush_ready()' has to be called when finished. */
 static void disp_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)
 {
+	   complete_disp_drv=disp_drv;
 		LCD_Color_Fill(area->x1,area->y1,area->x2,area->y2,(u16*)color_p);
+     
     /* IMPORTANT!!!
      * Inform the graphics library that you are ready with the flushing*/
-    lv_disp_flush_ready(disp_drv);
+    
 }
 
 

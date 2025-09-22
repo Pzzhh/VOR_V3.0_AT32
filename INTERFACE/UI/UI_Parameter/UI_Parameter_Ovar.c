@@ -200,3 +200,15 @@ static uint8_t UI_Get(Task_Parameter_Struct* e)
 
 	return 1;
 }
+
+
+uint8_t Ovar_exam_Para_Check(Task_Parameter_Struct* e)
+{
+	if (e->OVAR.Sec > 1000 && e->OVAR.Sec != 0)
+		return 0;
+	if (e->OVAR.Inc_Degree > 50 || e->OVAR.Inc_Degree < 0)
+		return 0;
+	if (e->OVAR.Vel > 360 || e->OVAR.Vel < -360)
+		return 0;
+	return 1;
+}

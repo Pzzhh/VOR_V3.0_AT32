@@ -459,6 +459,8 @@ static inline lv_style_res_t lv_style_get_prop_inlined(const lv_style_t * style,
         uint16_t * props = (uint16_t *)tmp;
         uint32_t i;
         for(i = 0; i < style->prop_cnt; i++) {
+            // if(props>0x2001FFFF)
+            //     break;
             lv_style_prop_t prop_id = LV_STYLE_PROP_ID_MASK(props[i]);
             if(prop_id == prop) {
                 if(props[i] & LV_STYLE_PROP_META_INHERIT)

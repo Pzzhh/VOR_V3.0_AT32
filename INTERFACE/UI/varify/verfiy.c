@@ -6,7 +6,7 @@
 #include "../other/meassage_center.h"
 #include "stdarg.h"
 
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 #include "Windows.h"
 #include <stdio.h>
 #else
@@ -19,7 +19,7 @@
 #define Using_UI_LOCK 1
 
 #define use_windows
-#ifdef STM32F40_41xxx
+#ifdef ATM32F43_xx
 #else
 typedef uint32_t TaskHandle_t;
 

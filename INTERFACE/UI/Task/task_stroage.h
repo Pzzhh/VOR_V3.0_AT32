@@ -17,6 +17,7 @@ extern "C"
 	Task_Parameter_Struct* Task_Stroage_add(Task_Parameter_Struct info);
 	//删除对象
 	uint8_t Task_Stroage_del(Task_Parameter_Struct* info);
+	uint8_t Task_Stroage_delAll(void);
 	uint8_t Task_Stroage_delByID(short ID);
 	uint8_t Task_Stroage_MoveByID(uint16_t swap1, uint16_t swap2);
 

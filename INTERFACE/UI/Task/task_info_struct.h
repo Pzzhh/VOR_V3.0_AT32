@@ -23,16 +23,25 @@ extern "C"
         Task_VHIT,
         Task_TC,
     }Task_Parameter_Mode_enum;
+    typedef enum
+    {
+        Ex_VOR=0,
+        Ex_OKR,
+        Ex_BOTH,
+        Ex_BOTH_R
+    }Task_Parameter_VOR_Exmode;
     //VOR
     typedef struct {
         uint32_t Counter;
         float Vel;
         float Freq;
+        Task_Parameter_VOR_Exmode ExMode;
     }Task_Parameter_VOR;
     //CONT
     typedef struct {
         int Sec;
         float Vel;
+        float okr_Vel;
     }Task_Parameter_Continue;
     //OVAR
     typedef struct {
@@ -43,10 +52,11 @@ extern "C"
     //VHIT
     typedef struct {
         uint32_t Counter;
+        uint8_t IsCW;
     }Task_Parameter_VHIT;
     //TC
     typedef struct {
-        int Sec;
+        uint32_t Counter;
         float Vel;
     }Task_Parameter_TC;
 

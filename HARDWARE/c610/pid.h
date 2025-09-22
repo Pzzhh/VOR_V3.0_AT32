@@ -23,8 +23,7 @@
 #ifndef __pid_H
 #define __pid_H
 /* Includes ------------------------------------------------------------------*/
-// #include "stm32f4xx.h"
-#include "at32f435_437.h"
+#include "stdint.h"
 
 enum{
     LLAST	= 0,

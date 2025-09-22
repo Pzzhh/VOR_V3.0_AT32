@@ -24,10 +24,7 @@
 
 
 #include "rtc.h"
-#include "at32f435_437_conf.h"
-#include "at32f435_437_ertc.h"
-#include "at32f435_437_crm.h"
-#include "at32f435_437_board.h"
+// #include "./BSP/LED/led.h"
 // #include "./SYSTEM/usart/usart.h"
 // #include "./SYSTEM/delay/delay.h"
 
@@ -40,9 +37,20 @@
 static uint8_t rtc_wait_synchro(void)
 {
     uint32_t retry = 0XFFFFF;
-    /* 等待影子寄存器同步 */
-    ertc_wait_synchro();
-    return 0; // AT32 ERTC API 已处理同步
+    /* 关闭RTC寄存器写保护 */
+    RTC->WPR = 0xCA;
+    RTC->WPR = 0x53;
+    RTC->ISR &= ~(1 << 5);  /* 清除RSF位 */
+
+    while (retry && ((RTC->ISR & (1 << 5)) == 0x00))
+    {
+        retry--;    /* 等待影子寄存器同步 */
+    }
+    
+    if (retry == 0)return 1;/* 同步失败 */
+
+    RTC->WPR = 0xFF;        /* 使能RTC寄存器写保护 */
+    return 0;
 }
 
 /**

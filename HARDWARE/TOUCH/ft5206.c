@@ -70,42 +70,32 @@ void FT5206_RD_Reg(u16 reg, u8 *buf, u8 len)
 u8 FT5206_Init(void)
 {
 	u8 temp[2];
-	GPIO_InitTypeDef GPIO_InitStructure;
+	gpio_init_type gpio_init_struct;
 
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC, ENABLE); // 使能GPIOB,C时钟
+	crm_periph_clock_enable(CRM_GPIOB_PERIPH_CLOCK, TRUE);
+	crm_periph_clock_enable(CRM_GPIOC_PERIPH_CLOCK, TRUE);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;		   // PB1设置为上拉输入
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;	   // 输入模式
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	   // 推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz; // 100MHz
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;	   // 上拉
-	GPIO_Init(GPIOB, &GPIO_InitStructure);			   // 初始化
+	gpio_default_para_init(&gpio_init_struct);
+	// PB1: INT input pull-up
+	gpio_init_struct.gpio_pins = GPIO_PINS_1;
+	gpio_init_struct.gpio_mode = GPIO_MODE_INPUT;
+	gpio_init_struct.gpio_pull = GPIO_PULL_UP;
+	gpio_init(GPIOB, &gpio_init_struct);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;		   // PC13设置为推挽输出
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;	   // 输出模式
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	   // 推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz; // 100MHz
-	GPIO_Init(GPIOC, &GPIO_InitStructure);			   // 初始化
+	// PC13: RST push-pull output
+	gpio_init_struct.gpio_pins = GPIO_PINS_13;
+	gpio_init_struct.gpio_mode = GPIO_MODE_OUTPUT;
+	gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+	gpio_init_struct.gpio_pull = GPIO_PULL_UP;
+	gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_MODERATE;
+	gpio_init(GPIOC, &gpio_init_struct);
 
-	CT_IIC_Init(); // 初始化电容屏的I2C总线
-	FT_RST = 0;	   // 复位
+	CT_IIC_Init();
+	FT_RST = 0;
 	delay_ms(20);
-	FT_RST = 1; // 释放复位
+	FT_RST = 1;
 	delay_ms(50);
 	temp[0] = 0;
-	// FT5206_WR_Reg(FT_DEVIDE_MODE,temp,1);	//进入正常操作模式
-	// FT5206_WR_Reg(FT_ID_G_MODE,temp,1);		//查询模式
-	// temp[0]=22;								//触摸有效值，22，越小越灵敏
-	// FT5206_WR_Reg(FT_ID_G_THGROUP,temp,1);	//设置触摸有效值
-	// temp[0]=12;								//激活周期，不能小于12，最大14
-	// FT5206_WR_Reg(FT_ID_G_PERIODACTIVE,temp,1);
-	// //读取版本号，参考值：0x3003
-	// FT5206_RD_Reg(FT_ID_G_LIB_VERSION,&temp[0],2);
-	// if(temp[0]==0X30&&temp[1]==0X03)//版本:0X3003
-	// {
-	// 	printf("CTP ID:%x\r\n",((u16)temp[0]<<8)+temp[1]);
-	// 	return 0;
-	//}
 	return 1;
 }
 const u16 FT5206_TPX_TBL[5] = {FT_TP1_REG, FT_TP2_REG, FT_TP3_REG, FT_TP4_REG, FT_TP5_REG};

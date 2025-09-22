@@ -15,6 +15,8 @@ extern "C"
         uint16_t y;
         int32_t* SpinBox_Value;
         char* Label_Str;
+        uint16_t MaxValue;
+		uint16_t MinValue;
     } UI_SpinBox_Struct;
     void SpinBox_Init(UI_SpinBox_Struct* e);
 

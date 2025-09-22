@@ -130,3 +130,9 @@ static uint8_t UI_Get(Task_Parameter_Struct* e)
 	return 1;
 }
 
+uint8_t VHIT_exam_Para_Check(Task_Parameter_Struct* e)
+{
+	if (e->VHIT.Counter > 1000 && e->VHIT.Counter != 0)
+		return 0;
+	return 1;
+}

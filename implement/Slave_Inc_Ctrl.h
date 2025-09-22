@@ -15,10 +15,10 @@ extern "C"
 {
 #endif
 
-    uint8_t INC_Machine_Init(float angle, uint32_t Maxcount);
+    uint8_t INC_Machine_Init(float angle, uint32_t Maxcount, uint8_t inc_dir);
     uint8_t INC_Machine_Stop(void);
     uint8_t INC_Machine_Get_Count(float *angleReq, float *CurrentAngle);
-    uint8_t INC_Machine_Manual_Ctrl(int8_t direction);
+    uint8_t INC_Machine_Manual_Ctrl(int8_t direction, uint8_t inc_dir);
     
 #ifdef __cplusplus
 }

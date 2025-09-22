@@ -2,14 +2,14 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-16 09:37:35
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2024-09-21 14:26:29
+ * @LastEditTime: 2025-06-20 14:19:06
  * @FilePath: \USERd:\workfile\项目11 robomaster\software\01 code\ovor\template\c610\C610.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE10
  */
 #include "C610.h"
 #include "../c610/pid.h"
 #include "../CAN/can.h"
-#include "at32f435_437.h"
+#include "stm32f4xx.h"
 // #include "Gui.h"
 
 static motor_measure_t motor_chassis[7];
@@ -29,11 +29,18 @@ float SetSpeed = 0, SetCurrent;
 pid_t Vpid, Ipid;
 motor_measure_t *mymotor;
 C610_Ctrl rotate;
+static uint8_t isC610Online = 0;
 
 void C610_Current_Cmd(C610_Current_Ctrl buf)
 {
     can_send_msg(0x200, (uint8_t *)&buf, 8);
     // can_tx_msg(0x200, 0, 0, 8, (uint8_t *)&buf);
+}
+
+void C610_Updata_Info(int16_t t_rpm, int16_t m_rpm, int16_t m_current, int16_t m_pwm)
+{
+    uint16_t buf[4] = {t_rpm, m_rpm, m_current, m_pwm};
+    can_send_msg(0x500, (uint8_t *)&buf, 8);
 }
 
 void C610_Current_Cmd2(int16_t a, int16_t b, int16_t c, int16_t d)
@@ -70,18 +77,30 @@ int16_t C610_PID_CAL(C610_Pid *PID, motor_measure_t *m, float Speed)
     MotorPower = pid_calc(&PID->I, m->given_current, TargetCurrent);
     return (int16_t)MotorPower;
 }
-float factor = 1.75;
-void Motor_Spd_Pid(float speed)
+// float factor = -65;
+float C610_Set_Speed = 0;
+void Motor_Set_Speed(float speed)
 {
-    if (speed == 0)
+    C610_Set_Speed = speed;
+}
+
+void Motor_Spd_Pid(void)
+{
+    if (isC610Online == 0)
+        return;
+    if (C610_Set_Speed == 0)
     {
         C610_Current_Cmd2(0, 0, 0, 0);
         return;
     }
     int16_t pwm;
-    float C610_Speed = -speed * 60.0f * 36.0f / factor;
-    pwm = C610_PID_CAL(&rotate.pid[0], &motor_chassis[0], speed);
+    float C610_Speed = -(C610_Set_Speed) * (60.0f * 36.0f) / (-65);
+    pwm = C610_PID_CAL(&rotate.pid[0], &motor_chassis[0], C610_Speed);
     C610_Current_Cmd2(pwm, 0, 0, 0);
+    C610_Updata_Info(C610_Speed,
+                     motor_chassis[0].speed_rpm,
+                     motor_chassis[0].given_current,
+                     pwm);
 }
 
 float Avarage(float *val, int len)
@@ -93,6 +112,11 @@ float Avarage(float *val, int len)
     }
     res /= 10;
     return res;
+}
+
+int C610_is_Online()
+{
+    return isC610Online;
 }
 
 void C610_RX_handler(uint32_t id, uint8_t *msg)
@@ -111,6 +135,7 @@ void C610_RX_handler(uint32_t id, uint8_t *msg)
     case CAN_TRIGGER_MOTOR_ID:
     {
         static uint8_t i = 0;
+        isC610Online = 1;
         // get motor id
         i = id - CAN_3508_M1_ID;
         if (index >= 10)

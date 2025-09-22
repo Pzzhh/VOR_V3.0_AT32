@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-13 11:18:33
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-09-11 16:12:02
+ * @LastEditTime: 2024-09-21 14:49:02
  * @FilePath: \USERd:\workfile\项目3 vor\software\vor-pjt\template\HARDWARE\CAN\can.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -30,83 +30,122 @@
  ****************************************************************************************************
  */
 
-// AT32F435 适配
-#include "at32f435_437_conf.h"
-#include "at32f435_437_can.h"
-#include "at32f435_437_gpio.h"
-#include "at32f435_437_crm.h"
 #include "../HARDWARE/CAN/can.h"
-
-void (*can_rx_handler)(can_rx_message_type *msg);
+void (*can_rx_handler)(CanRxMsg *msg);
 
 // #include "./BSP/LED/led.h"
 // #include "./SYSTEM/delay/delay.h"
 // #include "./SYSTEM/usart/usart.h"
 
-
 /**
- * @brief       AT32F435 CAN初始化（适配模板）
+ * @brief       CAN初始化
  * @param       tsjw    : 重新同步跳跃时间单元.范围: 1~3;
  * @param       tbs2    : 时间段2的时间单元.范围: 1~8;
  * @param       tbs1    : 时间段1的时间单元.范围: 1~16;
  * @param       brp     : 波特率分频器.范围: 1~1024;
+ *   @note      以上4个参数, 在函数内部会减1, 所以, 任何一个参数都不能等于0
+ *              CAN挂在APB1上面, 其输入时钟频率为 Fpclk1 = PCLK1 = 42Mhz
+ *              tq     = brp * tpclk1;
+ *              波特率 = Fpclk1 / ((tbs1 + tbs2 + 1) * brp);
+ *              我们设置 can_init(1, 6, 7, 6, 1), 则CAN波特率为:
+ *              42M / ((6 + 7 + 1) * 6) = 500Kbps
+ *
  * @param       mode    : 0,普通模式;1,回环模式;
  * @retval      0,  初始化成功; 其他, 初始化失败;
- * @note        需根据实际硬件连接修改 GPIO/CRM 配置
  */
 uint8_t can_init(uint8_t tsjw, uint8_t tbs2, uint8_t tbs1, uint16_t brp, uint8_t mode)
 {
-    // // 1. 使能外设时钟
-    // crm_periph_clock_enable(CRM_CAN1_PERIPH_CLOCK, TRUE);
-    // crm_periph_clock_enable(CRM_GPIOB_PERIPH_CLOCK, TRUE); // 假设用PB8/PB9做CAN
+    uint16_t i = 0;
 
-    // // 2. 配置GPIO为复用功能
-    // gpio_init_type gpio_init_struct;
-    // gpio_default_para_init(&gpio_init_struct);
-    // gpio_init_struct.gpio_pins = GPIO_PINS_8 | GPIO_PINS_9;
-    // gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
-    // gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
-    // gpio_init_struct.gpio_pull = GPIO_PULL_UP;
-    // gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-    // gpio_init(GPIOB, &gpio_init_struct);
+    if (tsjw == 0 || tbs2 == 0 || tbs1 == 0 || brp == 0)
+    {
+        return 1; /* 参数不合法, 直接返回 错误 */
+    }
 
-    // gpio_pin_mux_config(GPIOB, GPIO_PINS_SOURCE8, GPIO_MUX_9); // CAN_RX
-    // gpio_pin_mux_config(GPIOB, GPIO_PINS_SOURCE9, GPIO_MUX_9); // CAN_TX
+    tsjw -= 1; /* 先减去1.再用于设置 */
+    tbs2 -= 1;
+    tbs1 -= 1;
+    brp -= 1;
 
-    // // 3. CAN 参数配置
-    // can_init_type can_init_struct;
-    // can_default_para_init(&can_init_struct);
-    // can_init_struct.mode = (mode == 0) ? CAN_MODE_COMMUNICATE : CAN_MODE_LOOPBACK;
-    // can_init_struct.ttcm = FALSE;
-    // can_init_struct.abom = FALSE;
-    // can_init_struct.awum = FALSE;
-    // can_init_struct.nart = TRUE;
-    // can_init_struct.rflm = FALSE;
-    // can_init_struct.txfp = FALSE;
-    // can_init_struct.sjw = tsjw;
-    // can_init_struct.bs1 = tbs1;
-    // can_init_struct.bs2 = tbs2;
-    // can_init_struct.divider = brp;
-    // if (can_init(CAN1, &can_init_struct) != SUCCESS)
-    //     return 1;
+    CAN_RX_GPIO_CLK_ENABLE(); /* CAN_RX脚时钟使能 */
+    CAN_TX_GPIO_CLK_ENABLE(); /* CAN_TX脚时钟使能 */
 
-    // // 4. 过滤器配置（不过滤任何ID）
-    // can_filter_init_type can_filter_init_struct;
-    // can_filter_init_struct.filter_activate_enable = TRUE;
-    // can_filter_init_struct.filter_mode = CAN_FILTER_MODE_IDMASK;
-    // can_filter_init_struct.filter_fifo = CAN_FILTER_FIFO0;
-    // can_filter_init_struct.filter_number = 0;
-    // can_filter_init_struct.filter_bit = CAN_FILTER_32BIT;
-    // can_filter_init_struct.filter_id_high = 0;
-    // can_filter_init_struct.filter_id_low = 0;
-    // can_filter_init_struct.filter_mask_id_high = 0;
-    // can_filter_init_struct.filter_mask_id_low = 0;
-    // can_filter_init(&can_filter_init_struct);
+    RCC->APB1ENR |= RCC_APB1ENR_CAN2EN; /* 使能CAN时钟 CAN使用的是APB1的时钟(max: 42M) */
+    RCC->APB1ENR |= RCC_APB1ENR_CAN1EN;
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
+    GPIOB->MODER &= ~(GPIO_MODER_MODER13 | GPIO_MODER_MODER12);
+    GPIOB->MODER |= (GPIO_MODER_MODER13_1); //
+    GPIOB->MODER |= (GPIO_MODER_MODER12_1);
 
-    // // 5. 中断配置（如需）
-    // can_interrupt_enable(CAN1, CAN_RF0MIEN_INT, TRUE);
-    // // nvic_irq_enable(CAN1_RX0_IRQn, 2, 0); // 需根据实际中断号配置
+    GPIOB->OSPEEDR &= ~(GPIO_OSPEEDER_OSPEEDR12 | GPIO_OSPEEDER_OSPEEDR13);
+    GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR12_1; // set high speed
+    GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR13_1;
 
+    GPIOB->AFR[1] |= 9 << 16;
+    GPIOB->AFR[1] |= 9 << 20;
+
+    GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR12 | GPIO_PUPDR_PUPDR13);
+    GPIOB->PUPDR |= GPIO_PUPDR_PUPDR12_0; // pull up
+    GPIOB->PUPDR |= GPIO_PUPDR_PUPDR13_0; // pull up
+
+    CAN2->MCR = 0x0000;  /* 退出睡眠模式(同时设置所有位为0) */
+    CAN2->MCR |= 1 << 0; /* 请求CAN进入初始化模式 */
+
+    while ((CAN2->MSR & 1 << 0) == 0) /* 等待进入初始化模式成功 */
+    {
+        i++;
+
+        if (i > 100) /* 进入初始化模式失败 */
+        {
+            return 2;
+        }
+    }
+
+    CAN2->MCR |= 0 << 7;     /* 非时间触发通信模式 */
+    CAN2->MCR |= 0 << 6;     /* 软件自动离线管理 */
+    CAN2->MCR |= 0 << 5;     /* 睡眠模式通过软件唤醒(清除CAN2->MCR的SLEEP位) */
+    CAN2->MCR |= 1 << 4;     /* 禁止报文自动传送 */
+    CAN2->MCR |= 0 << 3;     /* 报文不锁定,新的覆盖旧的 */
+    CAN2->MCR |= 0 << 2;     /* 优先级由报文标识符决定 */
+    CAN2->BTR = 0;           /* 清除原来的设置. */
+    CAN2->BTR |= 0 << 30;    /* LBKM = mode, 模式设置  0, 普通模式; 1, 回环模式; */
+    CAN2->BTR |= 0 << 31;    /* LBKM = mode, 模式设置  0, 普通模式; 1, 回环模式; */
+    CAN2->BTR |= tsjw << 24; /* SJW[1:0] = tsjw, 重新同步跳跃宽度(Tsjw)为 tsjw + 1 个时间单位 */
+    CAN2->BTR |= tbs2 << 20; /* TS2[2:0] = tbs2, Tbs2 = tbs2 + 1 个时间单位 */
+    CAN2->BTR |= tbs1 << 16; /* TS1[2:0] = tbs1, Tbs1 = tbs1 + 1 个时间单位 */
+    CAN2->BTR |= brp << 0;   /* BRP[9:0] = brp, Fdiv = brp + 1 */
+
+    /* 波特率: Fpclk1 / ((Tbs1 + Tbs2 + 1) * Fdiv) */
+    CAN2->MCR &= ~(1 << 0); /* 请求CAN退出初始化模式 */
+
+    while ((CAN2->MSR & 1 << 0) == 1)
+    {
+        i++;
+
+        if (i > 0XFFF0)
+        {
+            return 3; /* 退出初始化模式失败 */
+        }
+    }
+
+    /* 过滤器初始化, 这里只用到了过滤器0, 且不过滤任何ID */
+    CAN1->FMR |= 1 << 0;                        /* 过滤器组工作在初始化模式 */
+    CAN1->FA1R &= ~(1 << 14);                   /* 过滤器0不激活 */
+    CAN1->FS1R |= 1 << 14;                      /* 过滤器位宽为32位. */
+    CAN1->FM1R = 0;                             /* 过滤器0工作在标识符屏蔽位模式 */
+    CAN1->FFA1R |= 0 << 0;                      /* 过滤器0关联到FIFO0 */
+    CAN1->sFilterRegister[14].FR1 = 0X00000000; /* 32位ID */
+    CAN1->sFilterRegister[14].FR2 = 0X00000000; /* 32位MASK */
+    CAN1->FA1R |= 1 << 14;                      /* 激活过滤器0 */
+    CAN1->FMR &= 0 << 0;                        /* 过滤器组进入正常模式 */
+
+#if 1
+
+    /* 使用中断接收 */
+    CAN2->IER |= 1 << 1;                   /* FIFO0消息挂号中断允许 */
+     sys_nvic_init(1, 0, CAN2_RX0_IRQn, 2); /* 组2 */
+
+#endif
     return 0;
 }
 
@@ -121,20 +160,60 @@ uint8_t can_init(uint8_t tsjw, uint8_t tbs2, uint8_t tbs1, uint16_t brp, uint8_t
  *   @arg       0 ~ 3   : 邮箱编号
  *   @arg       0XFF    : 无有效邮箱(数据发送失败)
  */
-
-uint8_t can_tx_msg(uint32_t id, uint8_t ide, uint8_t rtr, uint8_t len, uint8_t *data)
+ uint8_t can_tx_msg(uint32_t id, uint8_t ide, uint8_t rtr, uint8_t len, uint8_t *data)
 {
-    can_tx_message_type tx_msg;
-    tx_msg.standard_id = (ide == 0) ? id : 0;
-    tx_msg.extended_id = (ide == 1) ? id : 0;
-    tx_msg.id_type = (ide == 0) ? CAN_ID_STANDARD : CAN_ID_EXTENDED;
-    tx_msg.frame_type = (rtr == 0) ? CAN_TFT_DATA : CAN_TFT_REMOTE;
-    tx_msg.dlc = len;
-    for (uint8_t i = 0; i < len && i < 8; i++)
-        tx_msg.data[i] = data[i];
-    // if (can_message_transmit(CAN1, &tx_msg) == CAN_TMD_NOEMPTY)
-    //     return 0xFF; // 无空邮箱
-    return 0; // 发送成功
+    uint8_t mbox;
+
+    if (CAN2->TSR & (1 << 26)) /* 邮箱0为空, mbox = 0 */
+    {
+        mbox = 0;
+    }
+    else if (CAN2->TSR & (1 << 27)) /* 邮箱1为空, mbox = 1 */
+    {
+        mbox = 1;
+    }
+    else if (CAN2->TSR & (1 << 28)) /* 邮箱2为空, mbox = 2 */
+    {
+        mbox = 2;
+    }
+    else
+    {
+        return 0XFF; /* 无空邮箱, 无法发送 */
+    }
+
+    CAN2->sTxMailBox[mbox].TIR = 0; /* 清除之前的设置 */
+
+    if (ide == 0) /* 标准帧 */
+    {
+        id &= 0x7ff; /* 取低11位stdid */
+        id <<= 21;
+    }
+    else /* 扩展帧 */
+    {
+        id &= 0X1FFFFFFF; /* 取低32位extid */
+        id <<= 3;
+    }
+
+    CAN2->sTxMailBox[mbox].TIR |= id;
+    CAN2->sTxMailBox[mbox].TIR |= ide << 2;
+    CAN2->sTxMailBox[mbox].TIR |= rtr << 1;
+    len &= 0X0F; /* 得到低四位, 最长8个字节 */
+    CAN2->sTxMailBox[mbox].TDTR &= ~(0XF << 0);
+    CAN2->sTxMailBox[mbox].TDTR |= len; /* 设置DLC[3:0] */
+
+    /* 待发送数据存入邮箱 */
+    CAN2->sTxMailBox[mbox].TDHR = (((uint32_t)data[7] << 24) |
+                                   ((uint32_t)data[6] << 16) |
+                                   ((uint32_t)data[5] << 8) |
+                                   ((uint32_t)data[4]));
+
+    CAN2->sTxMailBox[mbox].TDLR = (((uint32_t)data[3] << 24) |
+                                   ((uint32_t)data[2] << 16) |
+                                   ((uint32_t)data[1] << 8) |
+                                   ((uint32_t)data[0]));
+
+    CAN2->sTxMailBox[mbox].TIR |= 1 << 0; /* 请求发送邮箱数据 */
+    return mbox;
 }
 
 /**
@@ -145,7 +224,37 @@ uint8_t can_tx_msg(uint32_t id, uint8_t ide, uint8_t rtr, uint8_t len, uint8_t *
  *   @arg       0X05    : 发送失败
  *   @arg       0X07    : 发送成功
  */
-// AT32库不需要单独查询邮箱状态，发送API已返回状态
+static uint8_t can_tx_status(uint8_t mbox)
+{
+    uint8_t sta = 0;
+
+    switch (mbox)
+    {
+    case 0:
+        sta |= CAN2->TSR & (1 << 0);            /* RQCP0 */
+        sta |= CAN2->TSR & (1 << 1);            /* TXOK0 */
+        sta |= ((CAN2->TSR & (1 << 26)) >> 24); /* TME0 */
+        break;
+
+    case 1:
+        sta |= CAN2->TSR & (1 << 8) >> 8;       /* RQCP1 */
+        sta |= CAN2->TSR & (1 << 9) >> 8;       /* TXOK1 */
+        sta |= ((CAN2->TSR & (1 << 27)) >> 25); /* TME1 */
+        break;
+
+    case 2:
+        sta |= CAN2->TSR & (1 << 16) >> 16;     /* RQCP2 */
+        sta |= CAN2->TSR & (1 << 17) >> 16;     /* TXOK2 */
+        sta |= ((CAN2->TSR & (1 << 28)) >> 26); /* TME2 */
+        break;
+
+    default:
+        sta = 0X05; /* 邮箱号不对,肯定失败 */
+        break;
+    }
+
+    return sta;
+}
 
 /**
  * @brief       得到在FIFO0/FIFO1中接收到的报文个数
@@ -155,9 +264,13 @@ uint8_t can_tx_msg(uint32_t id, uint8_t ide, uint8_t rtr, uint8_t len, uint8_t *
 uint8_t can_pend_msg(uint8_t fifox)
 {
     if (fifox == 0)
-        return can_receive_message_pending_get(CAN1, CAN_RX_FIFO0);
+    {
+        return CAN2->RF0R & 0x03; /* 返回FIFO0中报文个数 */
+    }
     else
-        return can_receive_message_pending_get(CAN1, CAN_RX_FIFO1);
+    {
+        return CAN2->RF1R & 0x03; /* 返回FIFO1中报文个数 */
+    }
 }
 
 /**
@@ -170,19 +283,40 @@ uint8_t can_pend_msg(uint8_t fifox)
  * @param       data    : 数据缓冲区
  * @retval      无
  */
-
-void can_rx_msg(uint8_t fifox, uint32_t *id, uint8_t *ide, uint8_t *rtr, uint8_t *len, uint8_t *data)
+ void can_rx_msg(uint8_t fifox, uint32_t *id, uint8_t *ide, uint8_t *rtr, uint8_t *len, uint8_t *data)
 {
-    can_rx_message_type rx_msg;
-    // if (can_message_receive(CAN1, fifox == 0 ? CAN_RX_FIFO0 : CAN_RX_FIFO1, &rx_msg) == SUCCESS)
-    // {
-    //     *ide = (rx_msg.id_type == CAN_ID_STANDARD) ? 0 : 1;
-    //     *id = (rx_msg.id_type == CAN_ID_STANDARD) ? rx_msg.standard_id : rx_msg.extend_id;
-    //     *rtr = (rx_msg.frame_type == CAN_TFT_DATA) ? 0 : 1;
-    //     *len = rx_msg.dlc;
-    //     for (uint8_t i = 0; i < rx_msg.dlc && i < 8; i++)
-    //         data[i] = rx_msg.data[i];
-    // }
+    *ide = CAN2->sFIFOMailBox[fifox].RIR & 0x04; /* 得到标识符选择位的值 */
+
+    if (*ide == 0) /* 标准标识符 */
+    {
+        *id = CAN2->sFIFOMailBox[fifox].RIR >> 21;
+    }
+    else /* 扩展标识符 */
+    {
+        *id = CAN2->sFIFOMailBox[fifox].RIR >> 3;
+    }
+
+    *rtr = CAN2->sFIFOMailBox[fifox].RIR & 0x02;  /* 得到远程发送请求值 */
+    *len = CAN2->sFIFOMailBox[fifox].RDTR & 0x0F; /* 得到DLC[3:0] */
+
+    /* 接收数据 */
+    data[0] = CAN2->sFIFOMailBox[fifox].RDLR & 0XFF;
+    data[1] = (CAN2->sFIFOMailBox[fifox].RDLR >> 8) & 0XFF;
+    data[2] = (CAN2->sFIFOMailBox[fifox].RDLR >> 16) & 0XFF;
+    data[3] = (CAN2->sFIFOMailBox[fifox].RDLR >> 24) & 0XFF;
+    data[4] = CAN2->sFIFOMailBox[fifox].RDHR & 0XFF;
+    data[5] = (CAN2->sFIFOMailBox[fifox].RDHR >> 8) & 0XFF;
+    data[6] = (CAN2->sFIFOMailBox[fifox].RDHR >> 16) & 0XFF;
+    data[7] = (CAN2->sFIFOMailBox[fifox].RDHR >> 24) & 0XFF;
+
+    if (fifox == 0)
+    {
+        CAN2->RF0R |= 0X20; /* 释放FIFO0邮箱 */
+    }
+    else
+    {
+        CAN2->RF1R |= 0X20; /* 释放FIFO1邮箱 */
+    }
 }
 
 #if CAN_RX0_INT_ENABLE /* 使能RX0中断 */
@@ -193,12 +327,15 @@ void can_rx_msg(uint8_t fifox, uint32_t *id, uint8_t *ide, uint8_t *rtr, uint8_t
  * @param       无
  * @retval      无
  */
-void CAN1_RX0_IRQHandler(void)
+void CAN2_RX0_IRQHandler(void)
 {
-    // can_message_type msg = {0};
-    // can_rx_msg(0, &msg.standard_id, (uint8_t *)&msg.id_type, (uint8_t *)&msg.frame_type, &msg.dlc, msg.data);
-    // if (can_rx_handler != 0)
-    //     can_rx_handler(&msg);
+    // uint8_t rxbuf[8];
+    // uint32_t id;
+    // uint8_t ide, rtr, len;
+    CanRxMsg msg = {0};
+    can_rx_msg(0, &msg.StdId, &msg.IDE, &msg.RTR, &msg.DLC, msg.Data);
+    if (can_rx_handler != 0)
+        can_rx_handler(&msg);
 }
 
 #endif
@@ -211,7 +348,23 @@ void CAN1_RX0_IRQHandler(void)
  */
 uint8_t can_send_msg(uint32_t id, uint8_t *msg, uint8_t len)
 {
-    return can_tx_msg(id, 0, 0, len, msg);
+    uint8_t mbox;
+    uint16_t t = 0;
+    uint8_t rval = 1;                      /* 默认标记发送失败 */
+    mbox = can_tx_msg(id, 0, 0, len, msg); /* 发送消息 */
+
+    while (t < 0XFFF)
+    {
+        if (can_tx_status(mbox) == 0X07) /* 发送完成 */
+        {
+            rval = 0; /* 标记成功 */
+            break;
+        }
+
+        t++;
+    }
+
+    return rval; /* 返回发送结果 */
 }
 
 /**
@@ -227,10 +380,16 @@ uint8_t can_receive_msg(uint32_t id, uint8_t *buf)
 {
     uint32_t rid = 0;
     uint8_t ide, rtr, len = 0;
+
     if (can_pend_msg(0) == 0)
-        return 0;
-    can_rx_msg(0, &rid, &ide, &rtr, &len, buf);
-    if (rid != id || ide != 0 || rtr != 0)
-        len = 0;
+        return 0; /* 没有接收到数据,直接退出 */
+
+    can_rx_msg(0, &rid, &ide, &rtr, &len, buf); /* 读取数据 */
+
+    if (rid != id || ide != 0 || rtr != 0) /* 接收到的ID不对 / 不是标准帧 / 不是数据帧 */
+    {
+        len = 0; /* 接收错误 */
+    }
+
     return len;
 }

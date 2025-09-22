@@ -9,11 +9,39 @@
 #ifndef __UI_include_H_
 #define __UI_include_H_
 
-#ifdef STM32F40_41xxx
+#ifdef ATM32F43_xx
 #include "LVGL/lvgl.h"
+#include "lv_conf.h"
+#include "stdint.h"
+typedef struct {
+		struct
+		{
+			uint16_t year;
+			uint16_t month;
+			uint16_t date;
+			uint16_t hour;
+			uint16_t min;
+			uint16_t sec;
+		}date;
+}timetyped_UI;
 #else
 
 #include "lvgl/lvgl.h"
+#include "lv_conf.h"
+typedef struct {
+	union {
+		uint16_t num[6];
+		struct
+		{
+			uint16_t year;
+			uint16_t month;
+			uint16_t date;
+			uint16_t hour;
+			uint16_t min;
+			uint16_t sec;
+		}date;
+	};
+}timetyped_UI;
 
 #endif // 
 

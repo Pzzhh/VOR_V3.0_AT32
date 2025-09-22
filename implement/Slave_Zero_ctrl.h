@@ -6,8 +6,8 @@
  * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\implement\Slave_Inc_Ctrl.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
-#ifndef __Slave_OVAR_Ctrl_H_
-#define __Slave_OVAR_Ctrl_H_
+#ifndef __Slave_zero_Ctrl_H_
+#define __Slave_zero_Ctrl_H_
 #include "stdint.h"
 
 #ifdef __cplusplus
@@ -15,9 +15,8 @@ extern "C"
 {
 #endif
 
-    uint8_t OVAR_Machine_Init(float vel, uint32_t MillSec);
-    uint8_t OVAR_Machine_Stop(void);
-    uint8_t OVAR_Machine_Get_Count(uint32_t *angleReq, uint32_t *CurrentAngle);
+  uint8_t Zero_Machine_Init(uint8_t isinit);
+  uint8_t Zero_Machine_get_flag(void);
 
 #ifdef __cplusplus
 }

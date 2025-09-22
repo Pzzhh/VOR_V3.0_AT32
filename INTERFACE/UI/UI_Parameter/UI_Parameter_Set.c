@@ -1,4 +1,4 @@
-﻿#include "UI_Parameter_Set.h"
+#include "UI_Parameter_Set.h"
 #include "../Task/task_info_struct.h"
 #include "../UI_Include.h"
 #include "../UI_Component/UI_SpinBox.h"
@@ -7,6 +7,8 @@
 #include "../UI_Parameter/UI_Parameter_Cont.h"
 #include "../UI_Parameter/UI_Parameter_Vor.h"
 #include "../UI_Parameter/UI_Parameter_Ovar.h"
+#include "../UI_Parameter/UI_Parameter_TC.h"
+#include "../UI_Parameter/UI_Parameter_VHIT.h"
 /*****************************************************/
 #define LV_SYMBOL_rotate_right "\xEF\x80\x9E"
 /*Add a border with bg_color*/
@@ -63,8 +65,11 @@ void Continue_init(lv_obj_t* parent)
 	SpinBox_Init(&e);
 }
 #endif
-
-const char* Set_item = "VOR\n""CONT\n""OVAR";
+#if 0
+#else
+const char* Set_item_OKR = "VOR\n""OKR\n""VOR+OKR\n""VOR+OKR*\n""CONT\n""OVAR\n""VHIT\n""TC";
+const char* Set_item_No_OKR = "VOR\n""CONT\n""OVAR\n""VHIT\n""TC";
+#endif
 typedef struct
 {
 	struct {
@@ -75,14 +80,15 @@ typedef struct
 	}Mode;
 	lv_obj_t* Context_Box;
 }UI_parameter_Set_Type;
+#define UI_Parameter_Handler_Size 6
 typedef struct
 {
-	UI_Parameter_Handler cb[4];
+	UI_Parameter_Handler cb[UI_Parameter_Handler_Size];
 }UI_parameter_cb;
 UI_parameter_cb ui_mode_cb;
 static UI_parameter_Set_Type mode_set;
 
-
+#define Msg_COMPARE(a,b) (strncmp(a,b,sizeof(a)-1)==0) //前必须是const字符串
 
 static void handler(UI_Dropdown_Struct* e)
 {
@@ -90,22 +96,42 @@ static void handler(UI_Dropdown_Struct* e)
 	lv_obj_t* obj = e->dropdown;
 	char* str = mode_set.Mode.str;
 	lv_dropdown_get_selected_str(obj, str, 10);
-	for (int i = 0;i < 4;i++)
+	for (int i = 0; i < UI_Parameter_Handler_Size; i++)
 	{
 		if (ui_mode_cb.cb[i].hidden != 0)
 			ui_mode_cb.cb[i].hidden(1);
 	}
-	if (strncmp("VOR", str, 3) == 0)
+	if (Msg_COMPARE("VOR", str))
 	{
 		ui_mode_cb.cb[Task_VOR].hidden(0);
 	}
-	if (strncmp("CONT", str, 4) == 0)
+	if (Msg_COMPARE("OKR", str))
+	{
+		ui_mode_cb.cb[Task_VOR].hidden(0);
+	}
+	if (Msg_COMPARE("VOR+OKR", str))
+	{
+		ui_mode_cb.cb[Task_VOR].hidden(0);
+	}
+	if (Msg_COMPARE("VOR+OKR*", str))
+	{
+		ui_mode_cb.cb[Task_VOR].hidden(0);
+	}
+	if (Msg_COMPARE("CONT", str))
 	{
 		ui_mode_cb.cb[Task_Continue].hidden(0);
 	}
-	if (strncmp("OVAR", str, 4) == 0)
+	if (Msg_COMPARE("OVAR", str))
 	{
 		ui_mode_cb.cb[Task_OVAR].hidden(0);
+	}
+	if (Msg_COMPARE("TC", str))
+	{
+		ui_mode_cb.cb[Task_TC].hidden(0);
+	}
+	if (Msg_COMPARE("VHIT", str))
+	{
+		ui_mode_cb.cb[Task_VHIT].hidden(0);
 	}
 
 }
@@ -115,17 +141,41 @@ uint8_t UI_Parameter_Read(Task_Parameter_Struct* e)
 {
 	uint8_t res = 0;
 	char* str = mode_set.Mode.str;
-	if (strncmp("VOR", str, 3) == 0)
+	if (Msg_COMPARE("VOR", str))
 	{
 		res = ui_mode_cb.cb[Task_VOR].Get(e);
+		e->VOR.ExMode = Ex_VOR;
 	}
-	if (strncmp("CONT", str, 4) == 0)
+	if (Msg_COMPARE("OKR", str))
+	{
+		res = ui_mode_cb.cb[Task_VOR].Get(e);
+		e->VOR.ExMode = Ex_OKR;
+	}
+	if (Msg_COMPARE("VOR+OKR", str))
+	{
+		res = ui_mode_cb.cb[Task_VOR].Get(e);
+		e->VOR.ExMode = Ex_BOTH;
+	}
+	if (Msg_COMPARE("VOR+OKR*", str))
+	{
+		res = ui_mode_cb.cb[Task_VOR].Get(e);
+		e->VOR.ExMode = Ex_BOTH_R;
+	}
+	if (Msg_COMPARE("CONT", str))
 	{
 		res = ui_mode_cb.cb[Task_Continue].Get(e);
 	}
-	if (strncmp("OVAR", str, 4) == 0)
+	if (Msg_COMPARE("OVAR", str))
 	{
 		res = ui_mode_cb.cb[Task_OVAR].Get(e);
+	}
+	if (Msg_COMPARE("TC", str))
+	{
+		res = ui_mode_cb.cb[Task_TC].Get(e);
+	}
+	if (Msg_COMPARE("VHIT", str))
+	{
+		res = ui_mode_cb.cb[Task_VHIT].Get(e);
 	}
 	return res;
 }
@@ -136,7 +186,7 @@ uint8_t UI_Parameter_Set(Task_Parameter_Struct* e)
 	return 0;
 }
 
-void Mode_init(lv_obj_t* parent)
+void Mode_init(lv_obj_t* parent,uint8_t isEnOkR)
 {
 
 	static  UI_Dropdown_Struct Mode_dropdown;
@@ -148,7 +198,7 @@ void Mode_init(lv_obj_t* parent)
 	lv_obj_set_style_bg_opa(context_box, 0, LV_OPA_TRANSP);
 	lv_obj_set_style_border_opa(context_box, 0, LV_OPA_TRANSP);
 	lv_obj_align(context_box, LV_ALIGN_DEFAULT, -15, 55);
-
+	
 	UI_Dropdown_Struct dropdown = {
 	   .dropdown = mode_set.Mode.dropdown1,
 	   .label = mode_set.Mode.label1,
@@ -156,11 +206,15 @@ void Mode_init(lv_obj_t* parent)
 	   .label_ofs_y = 0,
 	   .x = 50,
 	   .y = 0,
-	   .Item = Set_item,
+	   .Item = 0,
 	   .parent = context_box,
 	   .handle = (myhander)handler,
 	   .Label_Str = "mode"
 	};
+	if (isEnOkR)
+		dropdown.Item = Set_item_OKR;
+	else
+		dropdown.Item = Set_item_No_OKR;
 	Mode_dropdown = dropdown;
 	UI_DropDown_Init(&Mode_dropdown);
 
@@ -171,9 +225,13 @@ void Mode_init(lv_obj_t* parent)
 	ui_mode_cb.cb[Task_VOR] = VOR_init(parent, -15, 130);
 	ui_mode_cb.cb[Task_Continue] = Continue_init(parent, -15, 130);
 	ui_mode_cb.cb[Task_OVAR] = OVAR_init(parent, -15, 130);
+	ui_mode_cb.cb[Task_VHIT] = VHIT_init(parent, -15, 130);
+	ui_mode_cb.cb[Task_TC] = TC_init(parent, -15, 130);
 
 	ui_mode_cb.cb[Task_Continue].hidden(1);
 	ui_mode_cb.cb[Task_OVAR].hidden(1);
+	ui_mode_cb.cb[Task_VHIT].hidden(1);
+	ui_mode_cb.cb[Task_TC].hidden(1);
 	/*
 	 ui_mode_cb.cb[0].hidden(1);*/
 	return;

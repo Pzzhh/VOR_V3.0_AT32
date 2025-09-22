@@ -50,5 +50,5 @@ typedef struct
     int16_t last_ecd;
     int16_t isread;
 } motor_measure_t;
-void Motor_Spd_Pid(float speed);
+
 #endif

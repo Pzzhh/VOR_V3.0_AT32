@@ -17,6 +17,7 @@ extern "C"
 
     uint8_t OVAR_Machine_Init(float vel, uint32_t MillSec);
     uint8_t OVAR_Machine_Stop(void);
+    uint8_t OVAR_Machine_Pause(void);
     uint8_t OVAR_Machine_Get_Count(uint32_t *MillSecReq, uint32_t *CurrentMillSec);
 
 #ifdef __cplusplus

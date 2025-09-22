@@ -13,14 +13,13 @@
 #include "../HARDWARE/USART/USART1.h"
 #include "../HARDWARE/USART/USART6.h"
 
- //#define UserSerialPort
 #define buff_size 64
 static uint16_t buffIndex, buffIndexL;
 static uint8_t buff[buff_size], buffL[buff_size];
 static uint8_t newlineFlag, newlineFlagL;
 static uint8_t isreading, isreadingL;
 
-void Rk3588_Printf(const char* strOutputString, ...)
+void Rk3588_R_Printf(const char* strOutputString, ...)
 {
 	static uint8_t isbusy = 0;
 	//	uint8_t* pt = &isbusy;
@@ -28,8 +27,7 @@ void Rk3588_Printf(const char* strOutputString, ...)
 		{
 		}
 		isbusy = 1;*/
-#ifndef STM32F40_41xxx 
-#ifdef UserSerialPort
+#ifndef ATM32F43_xx
 #define PUT_PUT_DEBUG_BUF_LEN 1024
 	static char strBuffer[PUT_PUT_DEBUG_BUF_LEN] = { 0 };
 	va_list vlArgs;
@@ -39,8 +37,8 @@ void Rk3588_Printf(const char* strOutputString, ...)
 	va_end(vlArgs);
 	printf(strBuffer);
 	OutputDebugStringA(strBuffer); // OutputDebugString    // OutputDebugStringW
-	isbusy = 0
-#endif
+	//SerialPort_SendBuf(strBuffer,strlen(strBuffer));
+	isbusy = 0;
 #else
 	extern uint8_t USART1_Send_Package(char* string, uint16_t size);
 #define PUT_PUT_DEBUG_BUF_LEN 50
@@ -69,8 +67,7 @@ void Rk3588_L_Printf(const char* strOutputString, ...)
 		{
 		}
 		isbusy = 1;*/
-#ifndef STM32F40_41xxx
-#ifdef UserSerialPort
+#ifndef ATM32F43_xx
 #define PUT_PUT_DEBUG_BUF_LEN 1024
 	static char strBuffer[PUT_PUT_DEBUG_BUF_LEN] = { 0 };
 	va_list vlArgs;
@@ -81,7 +78,6 @@ void Rk3588_L_Printf(const char* strOutputString, ...)
 	printf(strBuffer);
 	OutputDebugStringA(strBuffer); // OutputDebugString    // OutputDebugStringW
 	isbusy = 0;
-#endif
 #else
 	extern uint8_t USART6_Send_Package(char* string, uint16_t size);
 #define PUT_PUT_DEBUG_BUF_LEN 50
@@ -102,7 +98,7 @@ void Rk3588_L_Printf(const char* strOutputString, ...)
 	isbusy = 0;
 }
 
-int Rk3588_ReadLine(const char* format, ...)
+int Rk3588_R_ReadLine(const char* format, ...)
 {
 	if (newlineFlag != 1)
 		return -1;
@@ -117,7 +113,7 @@ int Rk3588_ReadLine(const char* format, ...)
 	return res;
 }
 
-int Rk3588_ReadLineArg(const char* format, va_list* args)
+int Rk3588_R_ReadLineArg(const char* format, va_list* args)
 {
 	if (newlineFlag != 1)
 		return -1;
@@ -130,7 +126,7 @@ int Rk3588_ReadLineArg(const char* format, va_list* args)
 }
 
 
-int Rk3588_ReadLinearray(char* bytes)
+int Rk3588_R_ReadLinearray(char* bytes)
 {
 	if (newlineFlag != 1)
 		return -1;
@@ -166,7 +162,7 @@ int Rk3588_L_ReadLinearray(char* bytes)
 	return 1;
 }
 
-void Rk3588_SerialBuffer(uint8_t byte)
+void Rk3588_R_SerialBuffer(uint8_t byte)
 {
 	if (isreading)
 		return;
@@ -202,10 +198,10 @@ void Rk3588_L_SerialBuffer(uint8_t byte)
 
 void Rk3588_Init(void)
 {
-#ifdef STM32F40_41xxx
-	USART1_INIT(115200, Rk3588_SerialBuffer);
+#ifdef ATM32F43_xx
+	USART1_INIT(115200, Rk3588_R_SerialBuffer);
 	USART6_INIT(115200, Rk3588_L_SerialBuffer);
 #else
-	//SerialPort_Init(, L"COM1");
+	SerialPort_Init(Rk3588_R_SerialBuffer, L"COM1");
 #endif
 }

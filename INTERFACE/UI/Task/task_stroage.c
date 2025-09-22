@@ -2,7 +2,7 @@
 #include "../other/list.h"
 #include "../other/system_function.h"
 #define use_windows
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 #include "Windows.h"
 #include <stdio.h>
 #else
@@ -125,6 +125,15 @@ uint8_t Task_Stroage_del(Task_Parameter_Struct* info)
 	DelNodeByInstant(head, info);
 	head->_free(info);
 	return 1;
+}
+
+uint8_t Task_Stroage_delAll(void)
+{
+	int res = 1;
+	while (res)
+	{
+		res= Task_Stroage_delByID(0);
+	}
 }
 
 // find id by instant address

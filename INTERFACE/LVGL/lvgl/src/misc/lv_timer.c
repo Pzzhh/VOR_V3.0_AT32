@@ -70,10 +70,10 @@ LV_ATTRIBUTE_TIMER_HANDLER uint32_t lv_timer_handler(void)
 
     /*Avoid concurrent running of the timer handler*/
     static bool already_running = false;
-    if(already_running) {
-        TIMER_TRACE("already running, concurrent calls are not allow, returning");
-        return 1;
-    }
+    // if(already_running) {
+    //     TIMER_TRACE("already running, concurrent calls are not allow, returning");
+    //     return 1;
+    // }
     already_running = true;
 
     if(lv_timer_run == false) {

@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-30 11:37:02
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2024-09-05 18:22:21
+ * @LastEditTime: 2025-03-05 16:32:13
  * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\commuication\mpu\jy60.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -48,33 +48,33 @@ void jy60_Calculate()
     jy60.data.pitch = jy60_orginal.pitch / 32768.0f * 180 - Calibrate.pitch;
     jy60.data.yaw = jy60_orginal.yaw / 32768.0f * 180 - Calibrate.yaw;
     jy60.inc = sqrt((jy60.data.roll) * (jy60.data.roll) + (jy60.data.pitch) * (jy60.data.pitch));
-    char str[50];
-    uint16_t len = sprintf(str, "\r\n %d.%02d", (int)jy60.inc, (int)(jy60.inc * 100.0f) % 100);
+    // char str[50];
+    // uint16_t len = sprintf(str, "\r\n %d.%02d", (int)jy60.inc, (int)(jy60.inc * 100.0f) % 100);
     //USART3_PRINTF(str, len);
     if (index == 10)
         return;
 
-    jy60.data.roll = jy60_orginal.roll / 32768.0f * 180;
-    jy60.data.pitch = jy60_orginal.pitch / 32768.0f * 180;
-    jy60.data.yaw = jy60_orginal.yaw / 32768.0f * 180;
-    isupdata = 0;
-    stroage[index] = jy60.data;
-    index++;
+//    jy60.data.roll = jy60_orginal.roll / 32768.0f * 180;
+//    jy60.data.pitch = jy60_orginal.pitch / 32768.0f * 180;
+//    jy60.data.yaw = jy60_orginal.yaw / 32768.0f * 180;
+//    isupdata = 0;
+//    stroage[index] = jy60.data;
+//    index++;
 
-    // index = (index < sizeof(stroage)) ? index : 0;
-    if (index == 10)
-    {
-        for (uint16_t i = 0; i < 9; i++)
-        {
-            avarage.roll += stroage[i].roll;
-            avarage.pitch += stroage[i].pitch;
-            avarage.yaw += stroage[i].yaw;
-        }
-        avarage.roll /= 10;
-        avarage.pitch /= 10;
-        avarage.yaw /= 10;
-        Calibrate = avarage;
-    }
+//    // index = (index < sizeof(stroage)) ? index : 0;
+//    if (index == 10)
+//    {
+//        for (uint16_t i = 0; i < 9; i++)
+//        {
+//            avarage.roll += stroage[i].roll;
+//            avarage.pitch += stroage[i].pitch;
+//            avarage.yaw += stroage[i].yaw;
+//        }
+//        avarage.roll /= 10;
+//        avarage.pitch /= 10;
+//        avarage.yaw /= 10;
+//        Calibrate = avarage;
+//    }
 }
 
 void jy60_decode(uint8_t dr)
@@ -138,8 +138,8 @@ float JY60_Get_IncAsync()
 
 void JY60_Init(void)
 {
-#ifdef STM32F40_41xxx
+#ifdef ATM32F43_xx
     USART5_INIT(9600, jy60_decode);
 
-#endif //  STM32F40_41xxx
+#endif //  ATM32F43_xx
 }

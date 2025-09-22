@@ -7,10 +7,7 @@
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #include "USART5.h"
-#include "at32f435_437_conf.h"
-#include "at32f435_437_usart.h"
-#include "at32f435_437_gpio.h"
-#include "at32f435_437_crm.h"
+#include "at32f435_437.h"
 
 static void (*Interrupt_handle)(uint8_t dr);
 
@@ -25,53 +22,60 @@ void USART5_INIT(
 
     Interrupt_handle = handle;
 
-    // 1. 使能外设时钟
-    crm_periph_clock_enable(CRM_UART5_PERIPH_CLOCK, TRUE);
-    crm_periph_clock_enable(CRM_GPIOC_PERIPH_CLOCK, TRUE);
-    crm_periph_clock_enable(CRM_GPIOD_PERIPH_CLOCK, TRUE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC | RCC_AHB1Periph_GPIOD, ENABLE); // 使能GPIOA时钟
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART5, ENABLE);                        // 使能UART5时钟
 
-    // 2. 配置GPIO为复用功能
-    gpio_init_type gpio_init_struct;
-    gpio_default_para_init(&gpio_init_struct);
-    gpio_init_struct.gpio_pins = GPIO_PINS_12;
-    gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
-    gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
-    gpio_init_struct.gpio_pull = GPIO_PULL_UP;
-    gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-    gpio_init(GPIOC, &gpio_init_struct);
-    gpio_pin_mux_config(GPIOC, GPIO_PINS_SOURCE12, GPIO_MUX_8); // TX
+    // 串口1对应引脚复用映射
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource12, GPIO_AF_UART5); // GPIOA9复用为UART5
+    GPIO_PinAFConfig(GPIOD, GPIO_PinSource2, GPIO_AF_UART5);  // GPIOA10复用为UART5
 
-    gpio_init_struct.gpio_pins = GPIO_PINS_2;
-    gpio_init(GPIOD, &gpio_init_struct);
-    gpio_pin_mux_config(GPIOD, GPIO_PINS_SOURCE2, GPIO_MUX_8); // RX
+    // UART5端口配置
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;        //
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;      // 复用功能
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // 速度50MHz
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;    // 推挽复用输出
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;      // 上拉
+    GPIO_Init(GPIOC, &GPIO_InitStructure);            //
 
-    // 3. UART 参数配置
-    usart_init_type usart_init_struct;
-    usart_default_para_init(&usart_init_struct);
-    usart_init_struct.baudrate = boundrate;
-    usart_init_struct.data_bits = USART_DATA_8BITS;
-    usart_init_struct.stop_bits = USART_STOP_1_BIT;
-    usart_init_struct.parity = USART_PARITY_NONE;
-    usart_init_struct.hardware_flow_control = USART_HARDWARE_FLOW_NONE;
-    usart_init_struct.transmitter_enable = TRUE;
-    usart_init_struct.receiver_enable = TRUE;
-    usart_init(UART5, &usart_init_struct);
+    // UART5端口配置
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;         // GPIOA9与GPIOA10
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;      // 复用功能
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // 速度50MHz
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;    // 推挽复用输出
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;      // 上拉
+    GPIO_Init(GPIOD, &GPIO_InitStructure);            // 初始化PA9，PA10
 
-    // 4. 使能UART
-    usart_enable(UART5, TRUE);
+    // UART5 初始化设置
+    USART_InitStructure.USART_BaudRate = boundrate;                                 // 波特率设置
+    USART_InitStructure.USART_WordLength = USART_WordLength_8b;                     // 字长为8位数据格式
+    USART_InitStructure.USART_StopBits = USART_StopBits_1;                          // 一个停止位
+    USART_InitStructure.USART_Parity = USART_Parity_No;                             // 无奇偶校验位
+    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None; // 无硬件数据流控制
+    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;                 // 收发模式
+    USART_Init(UART5, &USART_InitStructure);                                        // 初始化串口1
 
-    // 5. 使能接收中断
-    usart_interrupt_enable(UART5, USART_RDBF_INT, TRUE);
-    nvic_irq_enable(UART5_IRQn, 0, 3);
+    USART_Cmd(UART5, ENABLE); // 使能串口1
+
+    // USART_ClearFlag(UART5, USART_FLAG_TC);
+
+    // #if EN_UART5_RX
+    USART_ITConfig(UART5, USART_IT_RXNE, ENABLE); // 开启相关中断
+
+    // UART5 NVIC 配置
+    NVIC_InitStructure.NVIC_IRQChannel = UART5_IRQn;          // 串口1中断通道
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0; // 抢占优先级3
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;        // 子优先级3
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;           // IRQ通道使能
+    NVIC_Init(&NVIC_InitStructure);                           // 根据指定的参数初始化VIC寄存器、
 }
 
-void UART5_IRQHandler(void)
+void UART5_IRQHandler(void) // 串口1中断服务程序
 {
-    if (usart_flag_get(UART5, USART_RDBF_FLAG) != RESET)
+    if (USART_GetITStatus(UART5, USART_IT_RXNE) != RESET) // 接收中断(接收到的数据必须??0x0d 0x0a结尾)
     {
-        uint8_t dr = usart_data_receive(UART5);
+        uint8_t dr = UART5->DR;
         if (Interrupt_handle != 0)
             Interrupt_handle(dr);
-        usart_flag_clear(UART5, USART_RDBF_FLAG);
+        USART_ClearITPendingBit(UART5, USART_IT_RXNE);
     }
 }

@@ -1,7 +1,8 @@
 #include "UI_ListBox.h"
 #include "../other/list.h"
 
-
+// 声明一个新的静态事件处理函数
+static void listbox_container_event_handler(lv_event_t* e);
 
 
 static void anim_y_cb(void* var, int32_t v) {
@@ -69,14 +70,26 @@ void UI_Table_Clean(List* head, int index, lv_obj_t* parent_)
 	{
 		Table_Property* Property = node->instant;
 		lv_obj_t* obj = Property->obj;
-		Property->anim->repeat_cnt = 0;
-		Property->isremove = 1;
-		//lv_anim_del_all();
+		//lv_obj_style
+		/* 
+		 * 修复：在删除对象或释放其属性之前，必须先显式地删除动画。
+		 * lv_anim_del 通过被动画化的变量(var)和执行回调(exec_cb)来查找并删除动画。
+		 * 在这里，'var' 就是 table 对象 'obj'。
+		 */
+			//lv_anim_wait
+		//lv_animimg_set_src
+		lv_anim_del(obj, anim_y_cb);
+		lv_style_reset(&Property->style);
+		/* 
+		 * 现在动画已经停止，以下清理步骤是安全的。
+		 * Property->isremove 和 Property->anim->repeat_cnt = 0 的操作也就不再需要了。
+		 */
 		lv_obj_remove_style(obj, NULL, LV_PART_ANY | LV_STATE_ANY);
 		lv_obj_del(obj);
 		head->_free(Property);
 		removeNode(head, node->data);
 		ID_UPdata(head);
+
 		LV_LOG_USER("\r\nremove Index addr %x", Property->obj);
 		////head->_free(Property);
 		//removeNode(head, node->data);
@@ -209,6 +222,28 @@ void UI_Table_Move(Table_Contain_Property* table_Contain_Property, int fromIndex
 	ID_UPdata(list);
 }
 
+// 定义新的事件处理函数
+static void listbox_container_event_handler(lv_event_t* e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	lv_obj_t* obj = lv_event_get_target(e);
+
+	if (code == LV_EVENT_DELETE) {
+		LV_LOG_USER("ListBox container deleted, cleaning up custom data.");
+		Table_Contain_Property* prop = (Table_Contain_Property*)lv_obj_get_user_data(obj);
+		if (prop) {
+			// 确保所有子项都已被清理
+			while (prop->list->size > 0) {
+				UI_Table_Clean(prop->list, 0, obj);
+			}
+			// 释放 List 结构体本身
+			lv_mem_free(prop->list);
+			// 释放 Table_Contain_Property 结构体
+			lv_mem_free(prop);
+		}
+	}
+}
+
 Table_Contain_Property* UI_ListBox_Create(lv_obj_t* parent)
 {
 	List* list = lv_mem_alloc(sizeof(List));
@@ -226,11 +261,12 @@ Table_Contain_Property* UI_ListBox_Create(lv_obj_t* parent)
 	table_Contain_Property->list = list;
 	table_Contain_Property->obj = table_box;
 	table_Contain_Property->hightLight_index = 0;
-	//add(list, table_box);
+	
+	// 添加事件回调以处理内存释放
+	lv_obj_add_event_cb(table_box, listbox_container_event_handler, LV_EVENT_DELETE, NULL);
 
 	return table_Contain_Property;
 }
-
 
 
 
@@ -257,16 +293,20 @@ lv_obj_t* UI_Table_Create(Table_Contain_Property* table_Contain_Property, void* 
 	lv_memset_00(table_proprity, sizeof(Table_Property));
 
 	lv_obj_set_height(table, 50);
-	for (int k = 1; k < 4; k++)
-		lv_table_set_col_width(table, k, 90);
+	lv_table_set_col_width(table, 0, 90);
+	lv_table_set_col_width(table, 1, 90);
+	for (int k = 2; k < 4; k++)
+		lv_table_set_col_width(table, k, 110);
 	lv_obj_clear_flag(table, LV_OBJ_FLAG_SCROLLABLE);
 	lv_obj_set_style_radius(table, 10, NULL);
 	lv_style_init(&table_proprity->style);
 	lv_style_set_outline_width(&table_proprity->style, 3);
 	lv_style_set_outline_pad(&table_proprity->style, 3);
 	lv_style_set_outline_color(&table_proprity->style, lv_palette_main(LV_PALETTE_BLUE));
+	lv_style_set_text_font(&table_proprity->style, &lv_font_montserrat_14);
 	lv_obj_add_style(table, &table_proprity->style, 0);
 	table->user_data = table_proprity;
+	
 
 	lv_anim_t a, * anim;
 	lv_anim_init(&a);
@@ -281,7 +321,7 @@ lv_obj_t* UI_Table_Create(Table_Contain_Property* table_Contain_Property, void* 
 
 	table_proprity->ID = &newnode->data;
 	table_proprity->obj = table;
-	table_proprity->set_clearence = 65;
+	table_proprity->set_clearence = 75;
 	table_proprity->updata_cd = updata_cd;
 	table_proprity->isremove = 0;
 	/* if (*table_proprity->ID > 2)

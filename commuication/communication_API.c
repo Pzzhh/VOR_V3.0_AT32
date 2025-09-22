@@ -2,7 +2,7 @@
 #include "stdarg.h"
 
 
-#ifdef STM32F40_41xxx
+#ifdef ATM32F43_xx
 #define USE_USB 1
 #define USE_BL 1
 #else
@@ -11,14 +11,14 @@
 #include "../serial/serialPort.h"
 #endif
 
-#ifndef STM32F40_41xxx
+#ifndef ATM32F43_xx
 #include <windows.h>
 #endif
 
 #if USE_USB
 #include "usbd_usr.h"
 #include "usbd_desc.h"
-#include "usb_conf.h"
+
 #include "usbd_cdc_core.h"
 
 extern USB_OTG_CORE_HANDLE USB_OTG_dev;
@@ -65,19 +65,19 @@ void Hal_Rk3588_Printf(const char* strOutputString, ...)
 		//Rk3588_Printf(strOutputString,...);
 }
 
-int Hal_Rk3588_ReadLine(const char* format, ...)
+int Hal_Rk3588_R_ReadLine(const char* format, ...)
 {
 	va_list arg;
 	va_start(arg, format);
-	int res = Rk3588_ReadLineArg(format, &arg);
+	int res = Rk3588_R_ReadLineArg(format, &arg);
 	va_end(arg);
 	return res;
 	//    Rk3588_Printf(strOutputString,...);
 }
 
-int Hal_Rk3588_Readarray(char *bytes)
+int Hal_Rk3588_R_Readarray(char *bytes)
 {
-	return Rk3588_ReadLinearray(bytes);
+	return Rk3588_R_ReadLinearray(bytes);
 	//    Rk3588_Printf(strOutputString,...);
 }
 
@@ -110,15 +110,14 @@ uint8_t HAL_BL_USART_INIT(void)
 {
 	extern void usart_protocol_InterruptHandle(uint8_t dr);
 #if USE_BL
-#ifdef STM32F40_41xxx
+#ifdef ATM32F43_xx
 	USART3_INIT(9600,
 		0);
 	usart_protocol_init(USART3_Send_Package);
 #else
 	//SerialPort_Init(usart_protocol_InterruptHandle, L"COM1");
-	SerialPort_Init(usart_protocol_InterruptHandle, L"COM1");
-	usart_protocol_init(SerialPort_SendBuf);
-#endif // STM32F40_41xxx
+	//usart_protocol_init(SerialPort_SendBuf);
+#endif // ATM32F43_xx
 
 #endif
 	return 1;
@@ -154,11 +153,11 @@ extern	vu8 bDeviceState;
 
 uint8_t HAL_USB_TX(uint8_t* str, uint16_t len)
 {
-#ifdef STM32F40_41xxx
+#ifdef ATM32F43_xx
 
 	extern void usbd_cdc_senddata(void* pdev, uint8_t * str, uint16_t len);
 	usbd_cdc_senddata(&USB_OTG_dev, str, len);
-#endif // STM32F40_41xxx
+#endif // ATM32F43_xx
 	return 0;
 }
 

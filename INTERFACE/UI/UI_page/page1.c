@@ -1,4 +1,5 @@
 #include "page1.h"
+#include "Page_Outage_Event.h"
 #include "page1_message_id.h"
 // #include "page_include.h"
 #include "../../UI/page_include.h"
@@ -9,22 +10,31 @@
 #include "../../UI/control/control_Hardware_API.h"
 #include "string.h"
 
-uint16_t  Get_Str_Len(const char* str, uint16_t maxlen);
-#define COMPARE(a,b) strncmp(a,b,Get_Str_Len(a,50))
+uint16_t Get_Str_Len(const char* str, uint16_t maxlen);
+#define COMPARE(a, b) strncmp(a, b, Get_Str_Len(a, 50))
 static Table_Contain_Property* table_Contain_Property;
 lv_timer_t Page1_timer;
 lv_obj_t* parent_box;
 lv_obj_t* parent_bo2[10];
 lv_obj_t* start_btn;
+lv_obj_t* stop_btn;
 lv_obj_t* Msg_Label;
+lv_obj_t* MsgWifi_Label;
 lv_obj_t* MouseNameTextArea;
+lv_obj_t* Task_Btn_Array[4];
 char MouseNameTextArea_textSource[50];
 uint8_t isSaveUpdata;
+uint8_t isPauseAllow = 1;
 int16_t CurrentTask = -1, Interval_ID = -1;
 int16_t CurrentCount = -1, Interval_RemainingSec = -1;
 uint8_t parent_bo2_index = 0;
-//static char msgBuffer[50];
+Task_Parameter_Struct Recive_Task_Info[10];
+uint8_t isRemoteRefresh = 0;
+uint8_t isTaskBtnClick = 0;
+uint8_t isTimeoutMsgShow = 0;
+// static char msgBuffer[50];
 static int touch_counter = 0;
+
 #define Read_Flag(n) (*((volatile) & n))
 typedef enum
 {
@@ -55,10 +65,35 @@ struct
 	Task_Parameter_Struct info;
 	Task_Parameter_Struct* info_pt;
 } Page_del_Task;
+typedef enum
+{
+	VHIT_BTN_CMD_None,
+	VHIT_BTN_CMD_INIT,
+	VHIT_BTN_CMD_DEINIT,
+	VHIT_BTN_CMD_Enable,
+	VHIT_BTN_CMD_Disable
+} VHIT_Next_Btn_Enable_CMD_Enum;
+
+struct
+{
+	enum
+	{
+		cam_ok,
+		cam_l_error,
+		cam_r_error,
+		cam_b_error,
+	} Wifi_Error_Block_typed;
+	uint8_t Wifi_Error_Block;
+} UI_Async_Flag;
+
+volatile VHIT_Next_Btn_Enable_CMD_Enum VHIT_Next_Btn_Enable_CMD;
+
+void UI_VHIT_NEXT_BTN_INIT();
+void UI_Page1_user_Timeout_Helper();
 
 // void UI_Page1_Refresh_handle(lv_time_t )
 
-static uint16_t  Get_Str_Len(const char* str, uint16_t maxlen)
+static uint16_t Get_Str_Len(const char* str, uint16_t maxlen)
 {
 	int i = 0;
 	for (; i < maxlen; i++)
@@ -73,17 +108,17 @@ static uint16_t  Get_Str_Len(const char* str, uint16_t maxlen)
 
 void Set_table_Cell_Text(lv_obj_t* obj, Task_Parameter_Struct* e)
 {
-	static int8_t updata_count = -1;
-	if (isSaveUpdata == 0)
-		return;
+	// static int8_t updata_count = -1;
+	// if (isSaveUpdata == 0)
+	//	return;
 	char strs[25];
 	Table_Property* item_property = UI_Table_Get_Property(obj);
-	if (updata_count > table_Contain_Property->list->size * 2)
-	{
-		isSaveUpdata = 0;
-		updata_count = -1;
-	}
-	updata_count = *item_property->ID;
+	// if (updata_count > table_Contain_Property->list->size*2 )
+	//{
+	//	isSaveUpdata = 0;
+	//	updata_count = -1;
+	// }
+	// updata_count++;
 	switch (e->mode)
 	{
 	case Task_VOR:
@@ -104,6 +139,8 @@ void Set_table_Cell_Text(lv_obj_t* obj, Task_Parameter_Struct* e)
 			lv_table_set_cell_value_fmt(obj, 0, 1, "%ds", e->CONT.Sec);
 		sprintf(strs, "%.0f°/s", e->CONT.Vel);
 		lv_table_set_cell_value_fmt(obj, 0, 2, "%s", strs);
+		sprintf(strs, "%.0f°/s", e->CONT.okr_Vel);
+		// lv_table_set_cell_value_fmt(obj, 0, 3, "O%s", strs);
 		lv_table_set_cell_value_fmt(obj, 0, 3, " ");
 		break;
 	case Task_OVAR:
@@ -116,69 +153,87 @@ void Set_table_Cell_Text(lv_obj_t* obj, Task_Parameter_Struct* e)
 		sprintf(strs, "%.0f°/s", e->OVAR.Vel);
 		lv_table_set_cell_value_fmt(obj, 0, 3, "%s", strs);
 		break;
+	case Task_VHIT:
+		lv_table_set_cell_value_fmt(obj, 0, 1, "%d", (int)e->VHIT.Counter);
+		lv_table_set_cell_value_fmt(obj, 0, 2, "%s", (e->VHIT.IsCW) ? "CW" : "CCW");
+		lv_table_set_cell_value_fmt(obj, 0, 3, " ");
+		break;
+	case Task_TC:
+		lv_table_set_cell_value_fmt(obj, 0, 1, "%d", (int)e->TC.Counter);
+		sprintf(strs, "%.0f°/s", e->TC.Vel);
+		lv_table_set_cell_value_fmt(obj, 0, 2, "%s", strs);
+		lv_table_set_cell_value_fmt(obj, 0, 3, " ");
+		break;
 	}
+}
+// char *
+const char* TaskNameTransLate(Task_Parameter_Struct t)
+{
+	static const char mode_name_array[][10] = { "VOR", "OKR", "VOR+OKR", "VOR+OKR*" };
+	static const char mode_name_array2[][10] = { "VOR", "CONT", "OVAR", "VHIT", "TC" };
+	// 注意 这里不是
+	uint16_t array_index = t.mode;
+	if (t.mode == Task_VOR)
+	{
+		array_index += t.VOR.ExMode;
+		if (array_index >= sizeof(mode_name_array))
+			array_index = 0;
+		return mode_name_array[(array_index)];
+	}
+	array_index = t.mode;
+	if (array_index >= sizeof(mode_name_array2))
+		array_index = 0;
+	return mode_name_array2[(array_index)];
 }
 
 #define SPRINTF sprintf_s
 void ui1_(Table_Property* p)
 {
+	static int8_t updata_count = -1, currentTask = -1;
+	static int16_t current_flag = -1;
+	static const char* okstr = LV_SYMBOL_OK;
+	static const char* nomral_str = "";
+	static const char* running_str = LV_SYMBOL_REFRESH;
+	char str[20];
+	int flag[2];
+	uint8_t readIndex;
+	const char* tag = nomral_str;
+	Message_Center_Read_prinft("Ctrl", str, sizeof(str), "ReqReadState");
+	readIndex = sscanf(str, "ReadState %d %d", flag, flag + 1);
+	if (readIndex == 2 && (currentTask != flag[1] || current_flag != flag[0]))
+	{
+		isSaveUpdata = 1;
+		updata_count = -1;
+		current_flag = flag[0];
+		currentTask = flag[1];
+	}
+	if (isSaveUpdata == 0)
+		return;
+	Table_Property* item_property = UI_Table_Get_Property(p->obj);
+	if (updata_count > table_Contain_Property->list->size * 2)
+	{
+		isSaveUpdata = 0;
+		updata_count = -1;
+	}
+	updata_count++;
 	short index = *p->ID;
 	if (p->Updata_Source)
 	{
+
 		Task_Parameter_Struct* task_info = p->Updata_Source;
-		const char mode_name_array[4][6] = { "NULL","VOR", "CONT","OVAR" };
-		uint16_t array_index = task_info->mode + 1;
-		if (array_index >= 0x04)
+		if (flag[0] != 0)
 		{
-			array_index = 0;
+			if (index == flag[1])
+				tag = running_str;
+			else if (index < flag[1])
+				tag = okstr;
 		}
-		const char* mode_Name = mode_name_array[(array_index)];
-		lv_table_set_cell_value_fmt(p->obj, 0, 0, "%s,%d", mode_Name, index);
+		lv_table_set_cell_value_fmt(p->obj, 0, 0, "%s%s",
+			TaskNameTransLate(*task_info),
+			tag);
 		Set_table_Cell_Text(p->obj, task_info);
 	}
 }
-//uint8_t Control_btn_communication(uint8_t message[50], uint8_t* cmd)
-//{
-//	char* CMD = cmd;
-//	if (CmdCheck(cmd, CMD_BTN_ADD) == 0)
-//	{
-//		// 执�?�添�?
-//	}
-//	if (Control_Add_Task.flag == Flag_required)
-//	{
-//		uint16_t index = Control_Add_Task.fouce_index;
-//		Control_Add_Task.info_pt = Task_Stroage_Insert(Control_Add_Task.info, index);
-//		if (Control_Add_Task.info_pt != 0)
-//			Control_Add_Task.flag = Flag_OKNE; // 让参数继�?运�??
-//		else
-//			Control_Add_Task.flag = Flag_Error;
-//		return 0;
-//	}
-//	if (Control_del_Task.flag == Flag_required)
-//	{
-//		uint16_t index = Control_del_Task.fouce_index;
-//		if (Task_Stroage_delByID(index))
-//			Control_del_Task.flag = Flag_OKNE; // 让参数继�?运�??
-//		else
-//			Control_del_Task.flag = Flag_Error;
-//		return 0;
-//	}
-//	if (Control_Save_Task.flag == Flag_required)
-//	{
-//		uint16_t index = Control_Save_Task.fouce_index;
-//		if (Control_Save_Task.para == 0)
-//		{
-//			Control_Save_Task.flag = Flag_Error;
-//		}
-//		else
-//		{
-//			memcpy(Control_Save_Task.para, &Control_Save_Task.Set, sizeof(Task_Parameter_Struct));
-//			Control_Save_Task.flag = Flag_OKNE;
-//		}
-//		return 0;
-//	}
-//	return 0;
-//}
 
 void UI_Task_Btn_ADD_Callback(uint16_t fouces_index, Task_Parameter_Struct* pt)
 {
@@ -186,15 +241,45 @@ void UI_Task_Btn_ADD_Callback(uint16_t fouces_index, Task_Parameter_Struct* pt)
 	lv_obj_t* table = UI_Table_Create(table_Contain_Property, ui1_, fouces_index);
 	Table_Property* table_Property = UI_Table_Get_Property(table);
 	parent_bo2[parent_bo2_index++] = table;
-	// 设置好数�?�?
+	// 设置好数�??�??
 	table_Property->Updata_Source = pt;
 	UI_Table_Set_Fouces(table_Contain_Property, fouces_index);
 }
 
+void UI_Zero_Btn_Click(lv_obj_t* btn, uint8_t isSet)
+{
+	int zeroEnable = 0;
+	// lv_btn_t* btn = e->user_data;
+	if (btn == 0)
+		return;
+	lv_obj_t* label = lv_obj_get_child(btn, 0);
+	Message_Center_Read_prinft("Ctrl", &zeroEnable, 1, "DEV Zero Disable");
+	if (isSet)
+		zeroEnable = !zeroEnable;
+	if (!zeroEnable)
+	{
+		lv_label_set_text(label, "Zero");
+	}
+	else
+	{
+		lv_label_set_text(label, "skip");
+	}
+	Message_Center_Read_prinft("Ctrl", 0, 0, "DEV Zero Disable %d", zeroEnable);
+}
+
+void UI_Zero_Btn_Click_Event(lv_event_t* e)
+{
+	lv_obj_t* btn = e->user_data;
+	UI_Zero_Btn_Click(btn, 1);
+}
+
 void UI_Task_Btn_ADD_Click_Event(lv_event_t* e)
 {
+	if (isTaskBtnClick)
+		return;
+	isTaskBtnClick = 1;
 	uint32_t handleID;
-	// volatile Control_flag *add_flag = &Control_Add_Task.flag;		//避免汇编�?访问reg导致错�??
+	// volatile Control_flag *add_flag = &Control_Add_Task.flag;		//避免汇编�??访问reg导致错�??
 	uint8_t res = UI_Parameter_Read(&Page_Add_Task.info);
 	if (res == 0)
 		return;
@@ -202,8 +287,10 @@ void UI_Task_Btn_ADD_Click_Event(lv_event_t* e)
 	int fouces_index = UI_Table_Get_Fouces(table_Contain_Property);
 	Page_Add_Task.fouce_index = fouces_index;
 	Task_manager_Begin_Req(&handleID);
-	Task_manager_Req_add(handleID, fouces_index, Page_Add_Task.info);
+	res = Task_manager_Req_add(handleID, fouces_index, Page_Add_Task.info);
 	Task_manager_End_release(handleID);
+	if (res)
+		isTaskBtnClick = 0;
 }
 
 void UI_Task_Btn_Move_Callback(uint16_t swap_index1, uint16_t swap_index2)
@@ -216,16 +303,20 @@ void UI_Task_Btn_Move_Callback(uint16_t swap_index1, uint16_t swap_index2)
 		fouces_index = swap_index2;
 	}
 	UI_Table_Set_Fouces(table_Contain_Property, fouces_index);
-
 }
 
 void UI_Task_Btn_Move_Click_Event(lv_event_t* e)
 {
+	if (isTaskBtnClick)
+		return;
+	isTaskBtnClick = 1;
 	uint32_t handleID;
 	int fouces_index = UI_Table_Get_Fouces(table_Contain_Property);
 	Task_manager_Begin_Req(&handleID);
-	Task_manager_Req_Move(handleID, fouces_index, fouces_index + 1);
+	uint8_t res = Task_manager_Req_Move(handleID, fouces_index, fouces_index + 1);
 	Task_manager_End_release(handleID);
+	if (res)
+		isTaskBtnClick = 0;
 }
 
 void UI_Task_Btn_Save_Callback(uint16_t fouces_index, Task_Parameter_Struct* src, Task_Parameter_Struct* traget)
@@ -235,6 +326,9 @@ void UI_Task_Btn_Save_Callback(uint16_t fouces_index, Task_Parameter_Struct* src
 
 void UI_Task_Btn_Save_Click_Event(lv_event_t* e)
 {
+	if (isTaskBtnClick)
+		return;
+	isTaskBtnClick = 1;
 	uint32_t handleID = 0;
 	Task_Parameter_Struct src;
 	uint8_t res = UI_Parameter_Read(&src);
@@ -242,6 +336,7 @@ void UI_Task_Btn_Save_Click_Event(lv_event_t* e)
 	Task_manager_Begin_Req(&handleID);
 	Task_manager_Req_Save(handleID, fouces_index, src);
 	Task_manager_End_release(handleID);
+	isTaskBtnClick = 0; // save didnt have callback so mannual set mutx to 0
 }
 
 void UI_Task_Btn_Del_Callback(uint16_t fouces_index)
@@ -260,17 +355,35 @@ void UI_Task_table_CLEAN_Callback()
 
 void UI_Task_Btn_Del_Click_Event(lv_event_t* e)
 {
+	if (isTaskBtnClick)
+		return;
+	isTaskBtnClick = 1;
 	static const Task_Parameter_Struct del_templete = { .mode = 0xff };
 	int fouces_index = UI_Table_Get_Fouces(table_Contain_Property);
 	if (fouces_index < 0)
 		return;
 	Table_Property* item_property = UI_Table_Find_Obj_User_Data(table_Contain_Property, fouces_index);
+	if (item_property == 0)
+		return;
 	item_property->Updata_Source = (void*)&del_templete;
 	LV_LOG_USER("DEL %d", fouces_index);
 	uint32_t handleID;
 	Task_manager_Begin_Req(&handleID);
-	Task_manager_Req_Del(handleID, fouces_index);
+	uint8_t res = Task_manager_Req_Del(handleID, fouces_index);
 	Task_manager_End_release(handleID);
+	if (res)
+		isTaskBtnClick = 0;
+}
+
+void UI_Zero_Btn_Init(lv_obj_t* parent)
+{
+	lv_obj_t* btn;
+	btn = lv_btn_create(parent);
+	lv_obj_align(btn, LV_ALIGN_DEFAULT, 300, 350);
+	lv_obj_t* label = lv_label_create(btn); /*Add a label to the button*/
+	lv_label_set_text(label, "Zero");		/*Set the labels text*/
+	lv_obj_add_event_cb(btn, UI_Zero_Btn_Click_Event, LV_EVENT_CLICKED, btn);
+	UI_Zero_Btn_Click(btn, 0);
 }
 
 void UI_Task_Btn_Init(lv_obj_t* parent)
@@ -280,11 +393,12 @@ void UI_Task_Btn_Init(lv_obj_t* parent)
 	for (int i = 0; i < 4; i++)
 	{
 		btn[i] = lv_btn_create(parent);
+		Task_Btn_Array[i] = btn[i];
 		lv_obj_set_size(btn[i], 70, 40);
 		lv_obj_t* label = lv_label_create(btn[i]); /*Add a label to the button*/
 		lv_label_set_text(label, string[i]);	   /*Set the labels text*/
 		lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
-		lv_obj_align(btn[i], LV_ALIGN_DEFAULT, i * 80, 0);
+		lv_obj_align(btn[i], LV_ALIGN_DEFAULT, i * 80 - 20, 0);
 	}
 	lv_obj_add_event_cb(btn[0], UI_Task_Btn_ADD_Click_Event, LV_EVENT_CLICKED, 0);
 	lv_obj_add_event_cb(btn[1], UI_Task_Btn_Move_Click_Event, LV_EVENT_CLICKED, 0);
@@ -296,20 +410,52 @@ char string[50];
 void UI_Task_Msg_Init(lv_obj_t* parent)
 {
 	Msg_Label = lv_label_create(parent);
-	lv_obj_align_to(Msg_Label, start_btn, LV_ALIGN_OUT_BOTTOM_LEFT, -200, -20);
-	lv_label_set_text(Msg_Label, string);
+	lv_obj_align_to(Msg_Label, start_btn, LV_ALIGN_OUT_BOTTOM_LEFT, -350, -30);
+	MsgWifi_Label = lv_label_create(parent);
+	lv_obj_align_to(MsgWifi_Label, Msg_Label, LV_ALIGN_BOTTOM_MID, 0, -30);
+	lv_label_set_text(MsgWifi_Label, "");
+	static lv_style_t style;
+	lv_style_init(&style);
 
+	// 设置字体（例如使用内置的 Montserrat 字体，大小 24）
+	lv_style_set_text_font(&style, &lv_font_montserrat_28);
+	lv_obj_set_width(Msg_Label, 350);
+	lv_label_set_long_mode(Msg_Label, LV_LABEL_LONG_WRAP);
+	// 将样式应用到标签
+	lv_obj_add_style(Msg_Label, &style, 0);
+	lv_label_set_text(Msg_Label, string);
+	lv_label_set_recolor(Msg_Label, 1);
+	lv_label_set_recolor(MsgWifi_Label, 1);
 }
 
 static uint8_t StartBtnFlag;
 
 void UI_Start_Btn_Clicked_Handle(lv_event_t* e)
 {
+	static lv_event_code_t flag = 0;
+	if (e->code == LV_EVENT_CLICKED)
+	{
+		if (flag != LV_EVENT_LONG_PRESSED)
+		{
+			Message_Center_Send_prinft("Ctrl", 0,
+				0,
+				"ReqShift");
+			// printf("\r\n clicked \r\n");
+		}
+		flag = e->code;
+	}
+}
+
+void UI_Stop_Btn_Clicked_Handle(lv_event_t* e)
+{
+	static lv_event_code_t flag = 0;
 	if (e->code == LV_EVENT_CLICKED)
 	{
 		Message_Center_Send_prinft("Ctrl", 0,
 			0,
-			"ReqShift");
+			"ReqStop");
+		flag = e->code;
+		// printf("\r\n press \r\n");
 	}
 }
 
@@ -326,9 +472,23 @@ void UI_Start_Btn_Init(lv_obj_t* parent)
 	lv_obj_t* btn = lv_btn_create(parent);
 	start_btn = btn;
 	lv_obj_t* label = lv_label_create(btn); /*Add a label to the button*/
-	lv_label_set_text(label, "start");		/*Set the labels text*/
-	lv_obj_align(btn, LV_ALIGN_TOP_RIGHT, 0, 0);
-	lv_obj_add_event_cb(btn, UI_Start_Btn_Clicked_Handle, LV_EVENT_CLICKED, 0);
+	lv_obj_set_size(btn, 70, 50);
+	lv_obj_center(label);
+	// lv_label_set_text(label, "start");		/*Set the labels text*/
+	lv_label_set_recolor(label, 1);
+	lv_obj_align(btn, LV_ALIGN_TOP_RIGHT, 0, -15);
+	lv_obj_add_event_cb(btn, UI_Start_Btn_Clicked_Handle, LV_EVENT_ALL, 0);
+
+	lv_obj_t* btn_stop = lv_btn_create(parent);
+	stop_btn = btn_stop;
+	lv_obj_set_size(btn_stop, 100, 50);
+	lv_obj_t* stop_label = lv_label_create(btn_stop); /*Add a label to the button*/
+	// lv_label_set_text(label, "start");		/*Set the labels text*/
+	lv_label_set_recolor(stop_label, 1);
+	lv_obj_set_size(btn_stop, 70, 50);
+	lv_obj_center(stop_label);
+	lv_obj_align_to(btn_stop, btn, LV_ALIGN_LEFT_MID, -100, 0);
+	lv_obj_add_event_cb(btn_stop, UI_Stop_Btn_Clicked_Handle, LV_EVENT_ALL, 0);
 }
 
 uint8_t UI_Start_Btn_Get_CMD(void)
@@ -361,26 +521,42 @@ void UI_Page1_Set_Msg_Finish(void)
 
 struct
 {
-	enum {
+	enum
+	{
 		cmd_none,
 		cmd_add,
 		cmd_move,
 		cmd_del,
 		cmd_save,
-		cmd_clean
-	}cmd_typed;
+		cmd_clean,
+		cmd_sync
+	} cmd_typed;
 	Task_Parameter_Struct* task;
+	Task_Parameter_Struct* taskArray[15];
 	uint16_t task_id;
 	uint16_t task_id2;
 	uint8_t isvaild;
 	uint16_t error_counter;
-}task_msg;
+} task_msg;
 
 void UI_Page1_Send_ADD_Cmd(uint8_t* msg, uint16_t msg_size,
 	uint8_t* src, uint16_t SrcSize)
 {
-	//if (task_msg.isvaild)
+	// if (task_msg.isvaild)
 	//	return;
+	if (Msg_COMPARE("SYNC", msg))
+	{
+		int index = 0;
+		if (sscanf(msg, "SYNC %d", &index) == 1)
+		{
+			task_msg.cmd_typed = cmd_sync;
+			task_msg.isvaild = 1;
+			memcpy(task_msg.taskArray, src, sizeof(Task_Parameter_Struct) * index);
+			task_msg.task_id = index;
+		}
+		return;
+	}
+
 	if (Msg_COMPARE("ADD", msg))
 	{
 		int index = 0;
@@ -403,22 +579,16 @@ void UI_Page1_Send_ADD_Cmd(uint8_t* msg, uint16_t msg_size,
 			task_msg.isvaild = 1;
 		}
 	}
-	if (Msg_COMPARE("SETZERO", msg))
-	{
-		task_msg.cmd_typed = cmd_clean;
-		task_msg.isvaild = 1;
-	}
 	if (Msg_COMPARE("Save", msg))
 	{
 		int index = 0;
 		if (sscanf(msg, "Save %d", &index) == 1 &&
 			SrcSize == sizeof(Task_Parameter_Struct*))
 		{
-
-			/*task_msg.cmd_typed = cmd_save;
-			task_msg.task = src;
-			task_msg.task_id = index;
-			task_msg.isvaild = 1;*/
+			/*	task_msg.cmd_typed = cmd_save;
+				task_msg.task = src;
+				task_msg.task_id = index;
+				task_msg.isvaild = 1;*/
 		}
 	}
 	if (Msg_COMPARE("Move", msg))
@@ -432,8 +602,12 @@ void UI_Page1_Send_ADD_Cmd(uint8_t* msg, uint16_t msg_size,
 			task_msg.isvaild = 1;
 		}
 	}
+	if (Msg_COMPARE("SETZERO", msg))
+	{
+		task_msg.cmd_typed = cmd_clean;
+		task_msg.isvaild = 1;
+	}
 	isSaveUpdata = 1;
-
 }
 
 MsgReadReturn UI_Page1_Send_MouseName(uint8_t* msg, uint16_t msg_size,
@@ -442,6 +616,66 @@ MsgReadReturn UI_Page1_Send_MouseName(uint8_t* msg, uint16_t msg_size,
 	if (Msg_COMPARE("MouseName?", msg))
 	{
 		strncpy(src, MouseNameTextArea_textSource, SrcSize);
+		return msg_match;
+	}
+	return msg_nomatch;
+}
+
+MsgReadReturn UI_Page1_Recv_wifi_Block_Msg(uint8_t* msg, uint16_t msg_size,
+	uint8_t* src, uint16_t SrcSize)
+{
+	if (Msg_COMPARE("NoticeWifierror", msg))
+	{
+		int flag = 0;
+		if (sscanf(msg, "NoticeWifierror %d", &flag) == 1)
+		{
+			// flag =3 -> all cam ok ->Wifi_Error_Block 0<- all ok
+			uint8_t Block = 0;
+			switch (flag)
+			{
+			case 3:
+				Block = cam_ok;
+				break;
+			case 2:
+				Block = cam_r_error;
+				break;
+			case 1:
+				Block = cam_l_error;
+				break;
+			case 0:
+				Block = cam_b_error;
+				break;
+			}
+			UI_Async_Flag.Wifi_Error_Block = Block;
+		}
+		return msg_match;
+	}
+	return msg_nomatch;
+}
+
+MsgReadReturn UI_Page1_Vhit_Next_Handle(uint8_t* msg, uint16_t msg_size,
+	uint8_t* src, uint16_t SrcSize)
+{
+	if (Msg_COMPARE("VHIT_NEXT_INIT", msg))
+	{
+		VHIT_Next_Btn_Enable_CMD = VHIT_BTN_CMD_INIT;
+		isPauseAllow = 0;
+		return msg_match;
+	}
+	if (Msg_COMPARE("VHIT_NEXT_DEINIT", msg))
+	{
+		VHIT_Next_Btn_Enable_CMD = VHIT_BTN_CMD_DEINIT;
+		isPauseAllow = 1;
+		return msg_match;
+	}
+	if (Msg_COMPARE("VHIT_NEXT_ENABLE", msg))
+	{
+		VHIT_Next_Btn_Enable_CMD = VHIT_BTN_CMD_Enable;
+		return msg_match;
+	}
+	if (Msg_COMPARE("VHIT_NEXT_DISABLE", msg))
+	{
+		VHIT_Next_Btn_Enable_CMD = VHIT_BTN_CMD_Disable;
 		return msg_match;
 	}
 	return msg_nomatch;
@@ -470,80 +704,116 @@ void UI_Page1_Get_Souce_Updata()
 		{
 			UI_Task_table_CLEAN_Callback();
 		}
+		if (cmdTpyed == cmd_sync)
+		{
+			UI_Task_table_CLEAN_Callback();
+			for (int i = 0; i < task_msg.task_id; i++)
+			{
+				UI_Task_Btn_ADD_Callback(i,
+					task_msg.taskArray[i]);
+			}
+			isSaveUpdata = 1;
+		}
 		task_msg.isvaild = 0;
+		isTaskBtnClick = 0;
 	}
-	//	uint16_t funid = 0;
-	//	void* pt = 0;
-	//	uint8_t flag = Message_Center_Get(
-	//		"task", funid,
-	//		&pt,
-	//		msgBuffer, sizeof(msgBuffer));
-	//	if (flag == 0)
-	//	{
-	//		if (COMPARE("ADD", msgBuffer) == 0)
-	//		{
-	//			if (pt == 0)
-	//				return;
-	//			Task_Parameter_Struct* task_pt = pt;
-	//			int add_index = 0;
-	//			if (sscanf(msgBuffer, "ADD %d", &add_index) == 1)
-	//			{
-	//				UI_Task_Btn_ADD_Callback(add_index, task_pt);
-	//			};
-	//		}
-	//		if (COMPARE("DEL", msgBuffer) == 0)
-	//		{
-	//			int del_index = 0;
-	//			if (sscanf(msgBuffer, "DEL %d", &del_index) == 1)
-	//			{
-	//				UI_Task_Btn_Del_Callback(del_index);
-	//			};
-	//		}
-	//		if (COMPARE("Save", msgBuffer) == 0)
-	//		{
-	//#if 0
-	//			int _index = 0;
-	//			if (sscanf(msgBuffer, "Save %d", &del_index) == 1)
-	//			{
-	//				//UI_Task_Btn_Save_Callback(del_index);
-	//			};
-	//#endif
-	//		}
-	//		if (COMPARE("Move", msgBuffer) == 0)
-	//		{
-	//			int swap1 = 0, swap2;
-	//			if (sscanf(msgBuffer, "Move %d %d", &swap1, &swap2) == 2)
-	//			{
-	//				UI_Task_Btn_Move_Callback(swap1, swap2);
-	//			};
-	//		}
-	//		Message_Center_Clean_Flag("task", funid);
-	//
-	//	}
 }
 
 void UI_Page1_Btn_Refulsh()
 {
+	enum
+	{
+		_ready,
+		_taskruning,
+		_runing, // 没用
+		_end,
+	} xtask_runing;
+	static uint8_t count = 0;
+	static State_Bit Last_flag = { .finish = 1 };
 	const int mallocSize = 40;
-	char* str = message_malloc(mallocSize);
-	if (str == 0)
+	State_Bit flag;
+	Message_Center_Read_prinft("Ctrl", &flag, sizeof(State_Bit), "run_State?");
+	// isruning display stop
+	// isruning ispause display hold
+	// stoping
+	// run
+	count++;
+	if (UI_Async_Flag.Wifi_Error_Block != cam_ok)
+	{
+		const char errormsgT[4][20] = { "none", "check Right wifi", "check Left wifi", "check both wifi" };
+		int index = UI_Async_Flag.Wifi_Error_Block;
+		index = (index > 4 || index < 0) ? 0 : index;
+		char* erromsg = (char*)errormsgT[index];
+		lv_obj_t* mbox1 = lv_msgbox_create(NULL, "error message",
+			erromsg,
+			0, true);
+		lv_obj_center(mbox1);
+		UI_Async_Flag.Wifi_Error_Block = cam_ok;
+	}
+	if (Last_flag.flag == flag.flag &&
+		Last_flag.ui_para == flag.ui_para)
+	{
 		return;
+	}
+	Last_flag = flag;
+	if (flag.IsRunning)
+	{
+		if (flag.isPause && flag.reqPause == 0)
+		{
+			// char* color = (count % 16 > 8) ? "#7CFC00" : "#EA0000";
+			uint32_t color = (count % 24 > 12) ? 0x7CFC00 : 0xF9F900;
+			lv_obj_t* label = lv_obj_get_child(start_btn, 0);
+			lv_label_set_text(label, "#000000 " LV_SYMBOL_PLAY);
+			lv_obj_set_style_bg_color(start_btn, lv_color_hex(color), 0);	// green
+			lv_obj_set_style_bg_color(stop_btn, lv_color_hex(0xEA0000), 0); // gray
+		}
+		else if (flag.reqPause || flag.ui_para != _taskruning)
+		{
+			lv_obj_set_style_bg_color(stop_btn, lv_color_hex(0xADADAD), 0);	 // gray
+			lv_obj_set_style_bg_color(start_btn, lv_color_hex(0xADADAD), 0); // gray
+		}
+		else if (flag.Exit)
+		{
+			lv_obj_set_style_bg_color(stop_btn, lv_color_hex(0xADADAD), 0);	 // gray
+			lv_obj_set_style_bg_color(start_btn, lv_color_hex(0xADADAD), 0); // gray
+		}
+		else
+		{
+			lv_obj_clear_flag(stop_btn, LV_OBJ_FLAG_HIDDEN);
+			lv_obj_t* label = lv_obj_get_child(stop_btn, 0);
+			lv_label_set_text(label, "#000000 " LV_SYMBOL_STOP);
+			lv_obj_set_style_bg_color(stop_btn, lv_color_hex(0xEA0000), 0);
+			label = lv_obj_get_child(start_btn, 0);
+			lv_label_set_text(label, "#000000 " LV_SYMBOL_PAUSE);
+			lv_obj_set_style_bg_color(start_btn, lv_color_hex(0xF9F900), 0); // yellow
+		}
+	}
+	else
+	{
+		lv_obj_add_flag(stop_btn, LV_OBJ_FLAG_HIDDEN);
+		lv_obj_t* label = lv_obj_get_child(start_btn, 0);
+		lv_label_set_text(label, "#000000 " LV_SYMBOL_PLAY);
+		lv_obj_set_style_bg_color(start_btn, lv_color_hex(0x7CFC00), 0);
+	}
+	if (flag.IsRunning)
+	{
+		uint8_t i = 0;
+		for (i = 0; i < 4; i++)
+		{
+			lv_obj_clear_flag(Task_Btn_Array[i], LV_OBJ_FLAG_CLICKABLE);
+			lv_obj_set_style_bg_color(Task_Btn_Array[i], lv_color_hex(0xADADAD), 0);
+		}
+	}
+	else
+	{
+		uint8_t i = 0;
+		for (i = 0; i < 4; i++)
+		{
+			lv_obj_add_flag(Task_Btn_Array[i], LV_OBJ_FLAG_CLICKABLE);
+			lv_obj_set_style_bg_color(Task_Btn_Array[i], lv_color_hex(0x2094f0), 0);
+		}
+	}
 
-	memset(str, 0, mallocSize);
-	Message_Center_Read_prinft("Ctrl", str, mallocSize, "run_State?");
-	if (Msg_COMPARE("isStart", str))
-	{
-		lv_obj_t* label = lv_obj_get_child(start_btn, 0);
-		// start:ON
-		lv_label_set_text_fmt(label, "%s", "STOP");
-	}
-	if (Msg_COMPARE("isStop", str))
-	{
-		lv_obj_t* label = lv_obj_get_child(start_btn, 0);
-		// start:ON
-		lv_label_set_text_fmt(label, "%s", "START");
-	}
-	message_free(str);
 }
 
 void UI_Page1_Msg_Refulsh()
@@ -558,49 +828,83 @@ void UI_Page1_Msg_Refulsh()
 		lv_label_set_text(Msg_Label, str);
 		lv_obj_invalidate(Msg_Label);
 	}
+	/*if (Message_Center_Read_prinft("Ctrl", str, mallocSize, "WifiMsg?") == 0)
+	{
+		lv_label_set_text(MsgWifi_Label, str);
+		lv_obj_invalidate(Msg_Label);
+	}*/
 	free(str);
-	//const char *newline = "\r\n";
-	//const int mallocSize = 40;
-	//char* str = message_malloc(mallocSize);
-	//if (str == 0)
+	// const char *newline = "\r\n";
+	// const int mallocSize = 40;
+	// char* str = message_malloc(mallocSize);
+	// if (str == 0)
 	//	return;
-	//memset(str, 0, mallocSize);
-	//if (Message_Center_Read_prinft("Ctrl", str, mallocSize, "Msg?") == 0)
+	// memset(str, 0, mallocSize);
+	// if (Message_Center_Read_prinft("Ctrl", str, mallocSize, "Msg?") == 0)
 	//{
 	//	lv_textarea_add_text(Msg_Label, str);
 	//	lv_textarea_add_text(Msg_Label, newline);
 	//	/*	lv_label_set_text(Msg_Label, str);
 	//		lv_obj_invalidate(Msg_Label);*/
-	//}
-	//free(str);
+	// }
+	// free(str);
 }
-
 
 void UI_Page1_Respone_Updata_Msg(uint8_t flag, uint16_t ID)
 {
 	if (flag == 0 && ID == ID_Bl_ctrl)
 	{
-
 	}
 }
 
+void UI_DFU_Display()
+{
+
+	lv_obj_t* mbox1 = lv_msgbox_create(NULL, "\n		    DFU Fireware Update",
+		"",
+		0, false);
+	lv_obj_center(mbox1);
+}
+volatile int testcount = 0;
 void UI_Page1_Timer_UIupdata_handle(lv_timer_t* t)
 {
+	static int i = 0;
+	static int period = 20; // 50*20ms = 1s
+	lv_event_t e;
+	/*if (i > period)
+	{
+		UI_Task_Btn_Del_Click_Event(&e);
+		testcount++;
+		i = 0;
+	}
+	else if (i == period / 2)
+	{
+		UI_Task_Btn_ADD_Click_Event(&e);
+	}
+	i++;*/
 	UI_Page1_Btn_Refulsh();
 	UI_Page1_Msg_Refulsh();
+	if (isTimeoutMsgShow)
+	{
+		isTimeoutMsgShow = 0;
+		UI_Page1_user_Timeout_Helper();
+	}
 }
 
 void UI_Page1_Timer_handle(lv_timer_t* t)
 {
 	UI_Page1_Get_Souce_Updata();
+	UI_VHIT_NEXT_BTN_INIT();
 }
 
 static void ta_event_cb(lv_event_t* e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	lv_obj_t* ta = lv_event_get_target(e);
-	lv_obj_t* kb = lv_event_get_user_data(e);
-	if (code == LV_EVENT_FOCUSED || code == LV_EVENT_CLICKED) {
+	extern lv_obj_t* UI_get_KeyBorad(lv_obj_t * parent);
+	lv_obj_t* kb = UI_get_KeyBorad(lv_scr_act());
+	if (code == LV_EVENT_FOCUSED || code == LV_EVENT_CLICKED)
+	{
 		lv_keyboard_set_textarea(kb, ta);
 		lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN);
 	}
@@ -611,62 +915,161 @@ static void ta_event_cb(lv_event_t* e)
 			50);
 	}
 
-	if (code == LV_EVENT_DEFOCUSED) {
+	if (code == LV_EVENT_DEFOCUSED)
+	{
 		lv_keyboard_set_textarea(kb, NULL);
 		lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
-		//lv_obj_invalidate(kb);
+		// lv_obj_invalidate(kb);
 	}
 }
 
-static void keyboardHidden(lv_event_t* e)
+void UI_VHIT_NEXT_BTN_HANDLE(lv_event_t* e)
 {
-	lv_event_code_t code = lv_event_get_code(e);
-	if (code == LV_EVENT_CANCEL) {
-		lv_obj_add_flag(e->current_target, LV_OBJ_FLAG_HIDDEN);
+	if (e->code == LV_EVENT_CLICKED)
+	{
+		Message_Center_Send_prinft("Ctrl", 0, 0,
+			"VHIT_Next_CMD");
 	}
 }
 
+void UI_VHIT_NEXT_BTN_INIT()
+{
+	static lv_obj_t* VHIT_Next_BTN;
+	if (VHIT_Next_Btn_Enable_CMD == VHIT_BTN_CMD_INIT && VHIT_Next_BTN == 0)
+	{
+		VHIT_Next_Btn_Enable_CMD = VHIT_BTN_CMD_None;
+		VHIT_Next_BTN = lv_btn_create(parent_box);
+		lv_obj_set_size(VHIT_Next_BTN, 150, 60);
+		lv_obj_align(VHIT_Next_BTN, LV_ALIGN_CENTER, 135, 160 + 20);
+		lv_obj_t* label = lv_label_create(VHIT_Next_BTN); /*Add a label to the button*/
+		lv_label_set_recolor(label, 1);
+		lv_label_set_text(label, "#000000 NEXT VHIT"); /*Set the labels text*/
+		lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+		lv_obj_set_style_bg_color(VHIT_Next_BTN, lv_color_hex(0xFFFF00), 0);
+		lv_obj_clear_flag(VHIT_Next_BTN, LV_OBJ_FLAG_CLICKABLE);
+		lv_obj_add_event_cb(VHIT_Next_BTN, UI_VHIT_NEXT_BTN_HANDLE, LV_EVENT_CLICKED, 0);
+	}
+	else if (VHIT_Next_Btn_Enable_CMD == VHIT_BTN_CMD_DEINIT && VHIT_Next_BTN != 0)
+	{
+		VHIT_Next_Btn_Enable_CMD = VHIT_BTN_CMD_None;
+		lv_obj_del(VHIT_Next_BTN);
+		VHIT_Next_BTN = 0;
+	}
+	else if (VHIT_Next_Btn_Enable_CMD == VHIT_BTN_CMD_Enable && VHIT_Next_BTN != 0)
+	{
+		lv_obj_set_style_bg_color(VHIT_Next_BTN, lv_color_hex(0x7CFC00), 0);
+		lv_obj_add_flag(VHIT_Next_BTN, LV_OBJ_FLAG_CLICKABLE);
+		VHIT_Next_Btn_Enable_CMD = VHIT_BTN_CMD_None;
+	}
+	else if (VHIT_Next_Btn_Enable_CMD == VHIT_BTN_CMD_Disable && VHIT_Next_BTN != 0)
+	{
+		lv_obj_set_style_bg_color(VHIT_Next_BTN, lv_color_hex(0xFFFF00), 0);
+		lv_obj_clear_flag(VHIT_Next_BTN, LV_OBJ_FLAG_CLICKABLE);
+		VHIT_Next_Btn_Enable_CMD = VHIT_BTN_CMD_None;
+	}
+}
 
 void UI_mouse_Name_textInput(lv_obj_t* parent)
 {
 	/*Create a keyboard to use it with an of the text areas*/
-	lv_obj_t* kb = lv_keyboard_create(lv_scr_act());
-	lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+	// lv_obj_t* kb = lv_keyboard_create(lv_scr_act());
+	// lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
 
 	/*Create a text area. The keyboard will write here*/
 	lv_obj_t* ta;
 	ta = lv_textarea_create(parent);
 	MouseNameTextArea = ta;
 	lv_obj_align(ta, LV_ALIGN_TOP_LEFT, -0, 120);
-	lv_obj_add_event_cb(ta, ta_event_cb, LV_EVENT_ALL, kb);
+	lv_obj_add_event_cb(ta, ta_event_cb, LV_EVENT_ALL, 0);
 	lv_textarea_set_placeholder_text(ta, "enter mouse name");
 	lv_textarea_set_accepted_chars(ta, "_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()-=+");
 	lv_textarea_set_max_length(ta, 10);
-	lv_obj_add_event_cb(kb, keyboardHidden, LV_EVENT_CANCEL, 0);
+
 	lv_obj_set_size(ta, 240, 45);
+}
+
+void UI_Page1_user_Helper()
+{
+	lv_obj_t* msgbox = lv_msgbox_create(NULL, "Help",
+		"1.Please ensure both side cameras are powered on and WiFi is configured.\n"
+		"2.Initialization may take up to 2 minutes.\n"
+		"3.Manual leveling is required after a power outage.\n"
+		"4.Stored tasks can be loaded in settings.",
+		NULL, true);
+	lv_obj_set_width(msgbox, 700);
+	lv_obj_center(msgbox);
+}
+
+
+
+void UI_Page1_user_Timeout_Helper()
+{
+	lv_obj_t* msgbox = lv_msgbox_create(NULL, "Carmer Connect Timeout",
+		"1.Please ensure both side cameras are powered on and WiFi is configured.\n",
+		NULL, true);
+	lv_obj_set_width(msgbox, 700);
+	lv_obj_center(msgbox);
+}
+
+
+void UI_Page1_Send_Helper(uint8_t* msg, uint16_t msg_size,
+	uint8_t* src, uint16_t SrcSize)
+{
+	if (Msg_COMPARE("Init timeout", msg))
+	{
+		isTimeoutMsgShow = 1;
+	}
+}
+
+void UI_Helper_Btn_Handler(lv_event_t e)
+{
+	if (e.code == LV_EVENT_CLICKED)
+	{
+		UI_Page1_user_Helper();
+	}
+}
+
+void UI_Helper_Btn_Init(lv_obj_t* parent)
+{
+	lv_obj_t* btn;
+	btn = lv_btn_create(parent);
+	lv_obj_align(btn, LV_ALIGN_BOTTOM_LEFT, 0, 10);
+	lv_obj_t* label = lv_label_create(btn); /*Add a label to the button*/
+	lv_label_set_recolor(label, 1);
+	lv_label_set_text(label, "#000000 Help");				   /*Set the labels text*/
+	lv_obj_set_style_bg_color(btn, lv_color_hex(0xffffff), 0); // green
+	lv_obj_add_event_cb(btn, UI_Helper_Btn_Handler, LV_EVENT_CLICKED, 0);
 }
 
 void Page1_init(lv_obj_t* parent)
 {
 	parent_box = parent;
 	table_Contain_Property = UI_ListBox_Create(parent);
-	//user expirement para set
-	Mode_init(parent);
+	uint32_t isEnOkr = 0;
+	Message_Center_Read_prinft("Ctrl", &isEnOkr, sizeof(isEnOkr), "DEV C610 CONFIG");
+
+	// user expirement para set
+	Mode_init(parent, isEnOkr);
 	// UI_Table_Create(list5, 0);
 	/*btn*/
-	UI_Task_Btn_Init(parent);   //task btn include -add-save-move-del
+	UI_Task_Btn_Init(parent); // task btn include -add-save-move-del
 
-	// task begin btn
+	UI_Helper_Btn_Init(parent);
+	// UI_Zero_Btn_Init(parent);
+	//  task begin btn
 	UI_Start_Btn_Init(parent);
 	UI_Task_Msg_Init(parent);
 
+	UI_Page1_Outage_Notice();
 	// meassage
 	Message_Center_Add_Send_CB("task", UI_Page1_Send_ADD_Cmd);
 	Message_Center_Add_Read_CB("page1", UI_Page1_Send_MouseName);
+	Message_Center_Add_Send_CB("page1", UI_Page1_Vhit_Next_Handle);
+	Message_Center_Add_Send_CB("page1", UI_Page1_Recv_wifi_Block_Msg);
+	Message_Center_Add_Send_CB("page1", UI_Page1_Send_Helper);
 	// mouse ID inter
 	UI_mouse_Name_textInput(parent);
 
 	lv_timer_create(UI_Page1_Timer_handle, 5, 0);
 	lv_timer_create(UI_Page1_Timer_UIupdata_handle, 100, 0);
-
 }
