@@ -2,13 +2,13 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
  * @Date: 2025-09-11 15:50:36
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-09-22 11:46:20
+ * @LastEditTime: 2025-09-22 11:51:05
  * @FilePath: \Slave_At32\HARDWARE\TOUCH\ft5206.h
  * @Description: 这是默认设置,请设C`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #ifndef __FT5206_H
 #define __FT5206_H	
-#include "sys.h"	
+#include "at32f435_437.h"
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //ALIENTEK STM32开发板

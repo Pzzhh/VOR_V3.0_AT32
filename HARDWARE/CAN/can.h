@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
  * @Date: 2024-08-05 14:28:29
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2024-09-19 11:15:19
+ * @LastEditTime: 2025-09-23 05:18:27
  * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\HARDWARE\CAN\can.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -33,45 +33,19 @@
 #ifndef __CAN_H
 #define __CAN_H
 
-#include "../SYSTEM/sys/sys.h"
-
-/******************************************************************************************/
-/* CAN 引脚 定义 */
-
-#define CAN_RX_GPIO_PORT GPIOA
-#define CAN_RX_GPIO_PIN SYS_GPIO_PIN11
-#define CAN_RX_GPIO_AF 9 /* AF功能选择 */
-#define CAN_RX_GPIO_CLK_ENABLE() \
-    do                           \
-    {                            \
-        RCC->AHB1ENR |= 1 << 0;  \
-    } while (0) /* PA口时钟使能 */
-
-#define CAN_TX_GPIO_PORT GPIOA
-#define CAN_TX_GPIO_PIN SYS_GPIO_PIN12
-#define CAN_TX_GPIO_AF 9 /* AF功能选择 */
-#define CAN_TX_GPIO_CLK_ENABLE() \
-    do                           \
-    {                            \
-        RCC->AHB1ENR |= 1 << 0;  \
-    } while (0) /* PA口时钟使能 */
-
-/******************************************************************************************/
-
-/* CAN接收RX0中断使能 */
-#define CAN_RX0_INT_ENABLE 1 /* 0,不使能; 1,使能; */
-
+#include "stdint.h"
+#include "at32f435_437.h"   
 /* 静态函数, 仅can.c可以调用 */
 static uint8_t can_pend_msg(uint8_t fifox); /* CAN 查询数据 */
 static uint8_t can_tx_status(uint8_t mbox); /* CAN 查询发送状态 */
                                             // static uint8_t can_tx_msg(uint32_t id, uint8_t ide, uint8_t rtr, uint8_t len, uint8_t *data);
-void can_rx_msg(uint8_t fifox, uint32_t *id, uint8_t *ide, uint8_t *rtr, uint8_t *len, uint8_t *data);
+// void can_rx_msg(uint8_t fifox, uint32_t *id, uint8_t *ide, uint8_t *rtr, uint8_t *len, uint8_t *data);
 
 /* 对外接口函数 */
 uint8_t can_receive_msg(uint32_t id, uint8_t *buf);                                     /* CAN接收数据, 查询 */
 uint8_t can_send_msg(uint32_t id, uint8_t *msg, uint8_t len);                           /* CAN发送数据 */
 uint8_t can_init(uint8_t tsjw, uint8_t tbs2, uint8_t tbs1, uint16_t brp, uint8_t mode); /* CAN初始化 */
 
-extern void (*can_rx_handler)(CanRxMsg *msg);
+extern void (*can_rx_handler)(can_rx_message_type *msg);
 
 #endif

@@ -1,7 +1,7 @@
 #include "lcd.h"
 #include "stdlib.h"
 #include "font.h"
-#include "usart.h"
+#include "at32f435_437.h"
 #include "delay.h"
 //////////////////////////////////////////////////////////////////////////////////
 // 本程序只供学习使用，未经作者许可，不得用于其它任何用途
@@ -85,12 +85,30 @@ u16 BACK_COLOR = 0xFFFF;  // 背景色
 // 默认为竖屏
 _lcd_dev lcddev;
 
+#define XMC_A6_SET                \
+	{                             \
+		__DSB();                  \
+		delay_us(0);              \
+		GPIOH->scr = GPIO_PINS_3; \
+		__DSB();                  \
+	}
+
+#define XMC_A6_CLR                      \
+	{                                   \
+		__DSB();                        \
+		delay_us(0);                    \
+		GPIOH->scr = GPIO_PINS_3 << 16; \
+		__DSB();                        \
+	}
+
 // 写寄存器函数
 // regval:寄存器值
 void LCD_WR_REG(vu16 regval)
 {
+	XMC_A6_CLR
 	regval = regval;	   // 使用-O2优化的时候,必须插入的延时
 	LCD->LCD_REG = regval; // 写入要写的寄存器序号
+	XMC_A6_SET
 }
 // 写LCD数据
 // data:要写入的值
@@ -112,7 +130,9 @@ u16 LCD_RD_DATA(void)
 // LCD_RegValue:要写入的数据
 void LCD_WriteReg(u16 LCD_Reg, u16 LCD_RegValue)
 {
-	LCD->LCD_REG = LCD_Reg;		 // 写入要写的寄存器序号
+	XMC_A6_CLR
+	LCD->LCD_REG = LCD_Reg; // 写入要写的寄存器序号
+	XMC_A6_SET
 	LCD->LCD_RAM = LCD_RegValue; // 写入数据
 }
 // 读寄存器
@@ -127,7 +147,9 @@ u16 LCD_ReadReg(u16 LCD_Reg)
 // 开始写GRAM
 void LCD_WriteRAM_Prepare(void)
 {
+	XMC_A6_CLR
 	LCD->LCD_REG = lcddev.wramcmd;
+	XMC_A6_SET
 }
 // LCD写GRAM
 // RGB_Code:颜色值
@@ -149,66 +171,57 @@ u16 LCD_BGR2RGB(u16 c)
 	return (rgb);
 }
 
-DMA_InitTypeDef DMA_InitStruct;
+dma_init_type DMA_InitStruct;
 void LCD_DMA_Init()
 {
 
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
+	CRM->ahben1_bit.dma2en = 1;
 
-	DMA_StructInit(&DMA_InitStruct);
+	dma_default_para_init(&DMA_InitStruct);
 
-	DMA_InitStruct.DMA_Channel = DMA_Channel_0; 
-	DMA_InitStruct.DMA_DIR = DMA_DIR_MemoryToMemory;
-	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Enable;		
-	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Disable;				
-	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord; 
-	DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;	 
-	DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;							 
-	DMA_InitStruct.DMA_Priority = DMA_Priority_High;					
-	DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;					
-	DMA_InitStruct.DMA_FIFOThreshold = DMA_FIFOThreshold_HalfFull;		 
-	DMA_InitStruct.DMA_MemoryBurst = DMA_MemoryBurst_Single;			
-	DMA_InitStruct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;	 
+	DMA_InitStruct.direction = DMA_DIR_MEMORY_TO_MEMORY;
+	DMA_InitStruct.peripheral_inc_enable = TRUE;
+	DMA_InitStruct.memory_inc_enable = FALSE;
+	DMA_InitStruct.peripheral_data_width = DMA_PERIPHERAL_DATA_WIDTH_HALFWORD;
+	DMA_InitStruct.memory_data_width = DMA_MEMORY_DATA_WIDTH_HALFWORD;
+	DMA_InitStruct.loop_mode_enable = FALSE;
+	DMA_InitStruct.priority = DMA_PRIORITY_HIGH;
 
-	DMA_Init(DMA2_Stream0, &DMA_InitStruct);
-	DMA2->LIFCR= 0xffffffff;
-	DMA2_Stream0->CR|=DMA_IT_TC;
-	NVIC_InitTypeDef NVIC_InitStructure;
-	NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream0_IRQn;		 
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0; 
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 4;		  
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			  
-	NVIC_Init(&NVIC_InitStructure);							 
-															 
+	dma_init(DMA2_CHANNEL1, &DMA_InitStruct);
+	dma_flag_clear(DMA2_FDT1_FLAG);
+	DMA2->clr = 0xffffffff;
+	dma_interrupt_enable(DMA2_CHANNEL1, DMA_FDT_INT, TRUE);
+	nvic_irq_enable(DMA2_Channel1_IRQn, 0, 4);
 }
-static int flag=0;
-void DMA2_Stream0_IRQHandler()
+static int flag = 0;
+void DMA2_Channel1_IRQHandler()
 {
-	if((DMA2->LISR & DMA_IT_TCIF0) != 0)
+	if ((DMA2->sts_bit.fdtf1) != 0)
 	{
 		extern void LCD_fill_complete_Recall();
-		 LCD_fill_complete_Recall();
-		flag=0;
+		LCD_fill_complete_Recall();
+		flag = 0;
 	}
-	DMA2->LIFCR= 0xffffffff;
+	DMA2->clr = 0xffffffff;
 }
 
 void LCD_DMA_Write(uint32_t srcBuffer, uint32_t dstBuffer, uint32_t BUFFER_SIZE)
 {
-	DMA2_Stream0->PAR=srcBuffer;
-	DMA2_Stream0->M0AR=dstBuffer;
+	DMA2_CHANNEL1->ctrl_bit.chen = 0;
+	DMA2_CHANNEL1->paddr = srcBuffer;
+	DMA2_CHANNEL1->maddr = dstBuffer;
 
-	DMA2_Stream0->NDTR=BUFFER_SIZE;
-		if(BUFFER_SIZE>50000)
-				DMA2_Stream0->NDTR=50000;
+	DMA2_CHANNEL1->dtcnt = BUFFER_SIZE;
+	if (BUFFER_SIZE > 0xFFFF)
+		DMA2_CHANNEL1->dtcnt = 0xFFFF;
 	// DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)srcBuffer; // ????
 	// DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)dstBuffer;	 // ?????
 	// DMA_InitStruct.DMA_BufferSize = BUFFER_SIZE;				 // ?????????С
 	// DMA_Init(DMA2_Stream0, &DMA_InitStruct);
-	DMA2->LIFCR= 0xffffffff;
-			flag=1;
-	DMA_Cmd(DMA2_Stream0, ENABLE);
-
+	DMA2->clr = 0xffffffff;
+	flag = 1;
+	DMA2_CHANNEL1->ctrl_bit.chen = 1;
+	// DMA_Cmd(DMA2_Stream0, ENABLE);
 }
 
 // 当mdk -O1时间优化时需要设置
@@ -576,7 +589,9 @@ void LCD_Fast_DrawPoint(u16 x, u16 y, u16 color)
 		LCD_WriteReg(lcddev.setxcmd, x);
 		LCD_WriteReg(lcddev.setycmd, y);
 	}
+	XMC_A6_CLR
 	LCD->LCD_REG = lcddev.wramcmd;
+	XMC_A6_SET
 	LCD->LCD_RAM = color;
 }
 // SSD1963 背光设置
@@ -769,117 +784,137 @@ void LCD_Set_Window(u16 sx, u16 sy, u16 width, u16 height)
 		LCD_SetCursor(sx, sy); // 设置光标位置
 	}
 }
-#define Reset_L GPIOG->BSRRH = GPIO_Pin_3;
-#define Reset_H GPIOG->BSRRL = GPIO_Pin_3;
+#define Reset_L GPIOG->odt_bit.odt3 = 0;
+#define Reset_H GPIOG->odt_bit.odt3 = 1;
 // 初始化lcd
 // 该初始化函数可以初始化各种ILI93XX液晶,但是其他函数是基于ILI9320的!!!
 // 在其他型号的驱动芯片上没有测试!
+void xmc_init(void)
+{
+	gpio_init_type gpio_init_struct = {0};
+	xmc_norsram_init_type xmc_norsram_init_struct;
+	xmc_norsram_timing_init_type rw_timing_struct, w_timing_struct;
+
+	/* enable the gpio clock */
+	//  crm_periph_clock_enable(CRM_GPIOB_PERIPH_CLOCK, TRUE);
+	crm_periph_clock_enable(CRM_GPIOC_PERIPH_CLOCK, TRUE);
+	crm_periph_clock_enable(CRM_GPIOD_PERIPH_CLOCK, TRUE);
+	crm_periph_clock_enable(CRM_GPIOE_PERIPH_CLOCK, TRUE);
+	crm_periph_clock_enable(CRM_GPIOH_PERIPH_CLOCK, TRUE);
+	crm_periph_clock_enable(CRM_GPIOG_PERIPH_CLOCK, TRUE);
+	//  crm_periph_clock_enable(CRM_GPIOF_PERIPH_CLOCK, TRUE);
+
+	/* enable the xmc clock */
+	crm_periph_clock_enable(CRM_XMC_PERIPH_CLOCK, TRUE);
+
+	/*-- gpio configuration ------------------------------------------------------*/
+	gpio_pin_mux_config(GPIOD, GPIO_PINS_SOURCE5, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOG, GPIO_PINS_SOURCE12, GPIO_MUX_12); //
+	gpio_pin_mux_config(GPIOD, GPIO_PINS_SOURCE4, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOD, GPIO_PINS_SOURCE0, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOD, GPIO_PINS_SOURCE1, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOD, GPIO_PINS_SOURCE8, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOD, GPIO_PINS_SOURCE9, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOD, GPIO_PINS_SOURCE10, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOD, GPIO_PINS_SOURCE14, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOD, GPIO_PINS_SOURCE15, GPIO_MUX_12);
+
+	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE7, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE8, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE9, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE10, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE11, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE12, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE13, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE14, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE15, GPIO_MUX_12);
+
+	/* lcd data lines configuration */
+	gpio_init_struct.gpio_pins = GPIO_PINS_12;
+	gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
+	gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+	gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
+	gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+	gpio_init(GPIOG, &gpio_init_struct);
+
+	gpio_init_struct.gpio_pins = GPIO_PINS_3;
+	gpio_init_struct.gpio_mode = GPIO_MODE_OUTPUT;
+	gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+	gpio_init_struct.gpio_pull = GPIO_PULL_UP;
+	gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+	gpio_init(GPIOH, &gpio_init_struct);
+	XMC_A6_SET
+
+	gpio_init_struct.gpio_pins = GPIO_PINS_0 | GPIO_PINS_1 | GPIO_PINS_4 | GPIO_PINS_5 |
+								 GPIO_PINS_8 |
+								 GPIO_PINS_9 | GPIO_PINS_10 | GPIO_PINS_14 | GPIO_PINS_15;
+	gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
+	gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+	gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
+	gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+	gpio_init(GPIOD, &gpio_init_struct);
+
+	gpio_init_struct.gpio_pins = GPIO_PINS_7 | GPIO_PINS_8 | GPIO_PINS_9 | GPIO_PINS_10 | GPIO_PINS_11 | GPIO_PINS_12 | GPIO_PINS_13 | GPIO_PINS_14 | GPIO_PINS_15;
+	gpio_init(GPIOE, &gpio_init_struct);
+
+	// /* lcd bl lines configuration */
+	gpio_init_struct.gpio_pins = GPIO_PINS_3;
+	gpio_init_struct.gpio_mode = GPIO_MODE_OUTPUT;
+	gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+	gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
+	gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+	gpio_init(GPIOG, &gpio_init_struct);
+
+	/*-- xmc configuration ------------------------------------------------------*/
+	xmc_norsram_default_para_init(&xmc_norsram_init_struct);
+	xmc_norsram_init_struct.subbank = XMC_BANK1_NOR_SRAM4;
+	xmc_norsram_init_struct.data_addr_multiplex = XMC_DATA_ADDR_MUX_DISABLE;
+	xmc_norsram_init_struct.device = XMC_DEVICE_SRAM;
+	xmc_norsram_init_struct.bus_type = XMC_BUSTYPE_16_BITS;
+	xmc_norsram_init_struct.burst_mode_enable = XMC_BURST_MODE_DISABLE;
+	xmc_norsram_init_struct.asynwait_enable = XMC_ASYN_WAIT_DISABLE;
+	xmc_norsram_init_struct.wait_signal_lv = XMC_WAIT_SIGNAL_LEVEL_LOW;
+	xmc_norsram_init_struct.wrapped_mode_enable = XMC_WRAPPED_MODE_DISABLE;
+	xmc_norsram_init_struct.wait_signal_config = XMC_WAIT_SIGNAL_SYN_BEFORE;
+	xmc_norsram_init_struct.write_enable = XMC_WRITE_OPERATION_ENABLE;
+	xmc_norsram_init_struct.wait_signal_enable = XMC_WAIT_SIGNAL_DISABLE;
+	xmc_norsram_init_struct.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
+	xmc_norsram_init_struct.write_burst_syn = XMC_WRITE_BURST_SYN_DISABLE;
+	xmc_nor_sram_init(&xmc_norsram_init_struct);
+
+	/* timing configuration */
+	xmc_norsram_timing_default_para_init(&rw_timing_struct, &w_timing_struct);
+	rw_timing_struct.subbank = XMC_BANK1_NOR_SRAM4;
+	rw_timing_struct.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
+	rw_timing_struct.addr_setup_time = 0xF;
+	rw_timing_struct.addr_hold_time = 0x0;
+	rw_timing_struct.data_setup_time = 60;
+	rw_timing_struct.bus_latency_time = 0x0;
+	rw_timing_struct.clk_psc = 0x0;
+	rw_timing_struct.data_latency_time = 0x0;
+	rw_timing_struct.mode = XMC_ACCESS_MODE_A;
+	w_timing_struct.subbank = XMC_BANK1_NOR_SRAM4;
+	w_timing_struct.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
+	w_timing_struct.addr_setup_time = 0x9;
+	w_timing_struct.addr_hold_time = 0x0;
+	w_timing_struct.data_setup_time = 0x8;
+	w_timing_struct.bus_latency_time = 0x0;
+	w_timing_struct.clk_psc = 0x0;
+	w_timing_struct.data_latency_time = 0x0;
+	w_timing_struct.mode = XMC_ACCESS_MODE_A;
+	xmc_nor_sram_timing_config(&rw_timing_struct, &w_timing_struct);
+
+	/* bus turnaround phase for consecutive read duration and consecutive write duration */
+	xmc_ext_timing_config(XMC_BANK1_NOR_SRAM4, 0x08, 0x08);
+
+	/* enable xmc_bank1_nor_sram4 */
+	xmc_nor_sram_enable(XMC_BANK1_NOR_SRAM4, TRUE);
+}
 void LCD_Init(void)
 {
 	vu32 i = 0;
-	GPIO_InitTypeDef GPIO_InitStructure;
-	FSMC_NORSRAMInitTypeDef FSMC_NORSRAMInitStructure;
-	FSMC_NORSRAMTimingInitTypeDef readWriteTiming;
-	FSMC_NORSRAMTimingInitTypeDef writeTiming;
-
+	xmc_init();
 	LCD_DMA_Init();
-
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOD | RCC_AHB1Periph_GPIOE | RCC_AHB1Periph_GPIOF | RCC_AHB1Periph_GPIOG, ENABLE); // 使能PD,PE,PF,PG时钟
-	RCC_AHB3PeriphClockCmd(RCC_AHB3Periph_FSMC, ENABLE);																							  // 使能FSMC时钟
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;		  // PB15 推挽输出,控制背光
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;	  // 普通输出模式
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	  // 推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // 100MHz
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;	  // 上拉
-	GPIO_Init(GPIOG, &GPIO_InitStructure);			  // 初始化 //PB15 推挽输出,控制背光
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_14 | GPIO_Pin_15; // PD0,1,4,5,8,9,10,14,15 AF OUT
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;																										 // 复用输出
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;																										 // 推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;																									 // 100MHz
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;																										 // 上拉
-	GPIO_Init(GPIOD, &GPIO_InitStructure);																												 // 初始化
-
-	GPIO_InitStructure.GPIO_Pin = (0X1FF << 7);		   // PE7~15,AF OUT
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;	   // 复用输出
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	   // 推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz; // 100MHz
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;	   // 上拉
-	GPIO_Init(GPIOE, &GPIO_InitStructure);			   // 初始化
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;		   // PF12,FSMC_A6
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;	   // 复用输出
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	   // 推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz; // 100MHz
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;	   // 上拉
-	GPIO_Init(GPIOF, &GPIO_InitStructure);			   // 初始化
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;		   // PF12,FSMC_A6
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;	   // 复用输出
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	   // 推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz; // 100MHz
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;	   // 上拉
-	GPIO_Init(GPIOG, &GPIO_InitStructure);			   // 初始化
-
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource0, GPIO_AF_FSMC); // PD0,AF12
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource1, GPIO_AF_FSMC); // PD1,AF12
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource4, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource5, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource8, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource9, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource10, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource14, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource15, GPIO_AF_FSMC); // PD15,AF12
-
-	GPIO_PinAFConfig(GPIOE, GPIO_PinSource7, GPIO_AF_FSMC); // PE7,AF12
-	GPIO_PinAFConfig(GPIOE, GPIO_PinSource8, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOE, GPIO_PinSource9, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOE, GPIO_PinSource10, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOE, GPIO_PinSource11, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOE, GPIO_PinSource12, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOE, GPIO_PinSource13, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOE, GPIO_PinSource14, GPIO_AF_FSMC);
-	GPIO_PinAFConfig(GPIOE, GPIO_PinSource15, GPIO_AF_FSMC); // PE15,AF12
-
-	GPIO_PinAFConfig(GPIOF, GPIO_PinSource12, GPIO_AF_FSMC); // PF12,AF12
-	GPIO_PinAFConfig(GPIOG, GPIO_PinSource12, GPIO_AF_FSMC);
-
-	readWriteTiming.FSMC_AddressSetupTime = 0XF; // 地址建立时间（ADDSET）为16个HCLK 1/168M=6ns*16=96ns
-	readWriteTiming.FSMC_AddressHoldTime = 0x00; // 地址保持时间（ADDHLD）模式A未用到
-	readWriteTiming.FSMC_DataSetupTime = 60;	 // 数据保存时间为60个HCLK	=6*60=360ns
-	readWriteTiming.FSMC_BusTurnAroundDuration = 0x00;
-	readWriteTiming.FSMC_CLKDivision = 0x00;
-	readWriteTiming.FSMC_DataLatency = 0x00;
-	readWriteTiming.FSMC_AccessMode = FSMC_AccessMode_A; // 模式A
-
-	writeTiming.FSMC_AddressSetupTime = 9;	 // 地址建立时间（ADDSET）为9个HCLK =54ns
-	writeTiming.FSMC_AddressHoldTime = 0x00; // 地址保持时间（A
-	writeTiming.FSMC_DataSetupTime = 8;		 // 数据保存时间为6ns*9个HCLK=54ns
-	writeTiming.FSMC_BusTurnAroundDuration = 0x00;
-	writeTiming.FSMC_CLKDivision = 0x00;
-	writeTiming.FSMC_DataLatency = 0x00;
-	writeTiming.FSMC_AccessMode = FSMC_AccessMode_A; // 模式A
-
-	FSMC_NORSRAMInitStructure.FSMC_Bank = FSMC_Bank1_NORSRAM4;					   //  这里我们使用NE4 ，也就对应BTCR[6],[7]。
-	FSMC_NORSRAMInitStructure.FSMC_DataAddressMux = FSMC_DataAddressMux_Disable;   // 不复用数据地址
-	FSMC_NORSRAMInitStructure.FSMC_MemoryType = FSMC_MemoryType_SRAM;			   // FSMC_MemoryType_SRAM;  //SRAM
-	FSMC_NORSRAMInitStructure.FSMC_MemoryDataWidth = FSMC_MemoryDataWidth_16b;	   // 存储器数据宽度为16bit
-	FSMC_NORSRAMInitStructure.FSMC_BurstAccessMode = FSMC_BurstAccessMode_Disable; // FSMC_BurstAccessMode_Disable;
-	FSMC_NORSRAMInitStructure.FSMC_WaitSignalPolarity = FSMC_WaitSignalPolarity_Low;
-	FSMC_NORSRAMInitStructure.FSMC_AsynchronousWait = FSMC_AsynchronousWait_Disable;
-	FSMC_NORSRAMInitStructure.FSMC_WrapMode = FSMC_WrapMode_Disable;
-	FSMC_NORSRAMInitStructure.FSMC_WaitSignalActive = FSMC_WaitSignalActive_BeforeWaitState;
-	FSMC_NORSRAMInitStructure.FSMC_WriteOperation = FSMC_WriteOperation_Enable; //  存储器写使能
-	FSMC_NORSRAMInitStructure.FSMC_WaitSignal = FSMC_WaitSignal_Disable;
-	FSMC_NORSRAMInitStructure.FSMC_ExtendedMode = FSMC_ExtendedMode_Enable; // 读写使用不同的时序
-	FSMC_NORSRAMInitStructure.FSMC_WriteBurst = FSMC_WriteBurst_Disable;
-	FSMC_NORSRAMInitStructure.FSMC_ReadWriteTimingStruct = &readWriteTiming; // 读写时序
-	FSMC_NORSRAMInitStructure.FSMC_WriteTimingStruct = &writeTiming;		 // 写时序
-
-	FSMC_NORSRAMInit(&FSMC_NORSRAMInitStructure); // 初始化FSMC配置
-
-	FSMC_NORSRAMCmd(FSMC_Bank1_NORSRAM4, ENABLE); // 使能BANK1
 	Reset_H
 		delay_ms(1);
 	Reset_L
@@ -943,19 +978,57 @@ void LCD_Init(void)
 	}
 	if (lcddev.id == 0X9341 || lcddev.id == 0X5310 || lcddev.id == 0X5510 || lcddev.id == 0X1963) // 如果是这几个IC,则设置WR时序为最快
 	{
-		// 重新配置写时序控制寄存器的时序
-		FSMC_Bank1E->BWTR[6] &= ~(0XF << 0); // 地址建立时间(ADDSET)清零
-		FSMC_Bank1E->BWTR[6] &= ~(0XF << 8); // 数据保存时间清零
-		FSMC_Bank1E->BWTR[6] |= 3 << 0;		 // 地址建立时间(ADDSET)为3个HCLK =18ns
-		FSMC_Bank1E->BWTR[6] |= 2 << 8;		 // 数据保存时间(DATAST)为6ns*3个HCLK=18ns
+		// 使用AT32 XMC写时序配置：ADDR_SETUP=3，DATA_SETUP=2（保持读时序不变）
+		xmc_norsram_timing_init_type rw_t, w_t;
+		xmc_norsram_timing_default_para_init(&rw_t, &w_t);
+		rw_t.subbank = XMC_BANK1_NOR_SRAM4;
+		rw_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
+		rw_t.addr_setup_time = 0x2; // 保持与xmc_init一致
+		rw_t.addr_hold_time = 0x0;
+		rw_t.data_setup_time = 0x2; // 保持与xmc_init一致
+		rw_t.bus_latency_time = 0x0;
+		rw_t.clk_psc = 0x0;
+		rw_t.data_latency_time = 0x0;
+		rw_t.mode = XMC_ACCESS_MODE_A;
+
+		w_t.subbank = XMC_BANK1_NOR_SRAM4;
+		w_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
+		w_t.addr_setup_time = 0x3; // 3个HCLK
+		w_t.addr_hold_time = 0x0;
+		w_t.data_setup_time = 0x2; // 2个HCLK
+		w_t.bus_latency_time = 0x0;
+		w_t.clk_psc = 0x0;
+		w_t.data_latency_time = 0x0;
+		w_t.mode = XMC_ACCESS_MODE_A;
+
+		xmc_nor_sram_timing_config(&rw_t, &w_t);
 	}
 	else if (lcddev.id == 0X6804 || lcddev.id == 0XC505) // 6804/C505速度上不去,得降低
 	{
-		// 重新配置写时序控制寄存器的时序
-		FSMC_Bank1E->BWTR[6] &= ~(0XF << 0); // 地址建立时间(ADDSET)清零
-		FSMC_Bank1E->BWTR[6] &= ~(0XF << 8); // 数据保存时间清零
-		FSMC_Bank1E->BWTR[6] |= 10 << 0;	 // 地址建立时间(ADDSET)为10个HCLK =60ns
-		FSMC_Bank1E->BWTR[6] |= 12 << 8;	 // 数据保存时间(DATAST)为6ns*13个HCLK=78ns
+		// 使用AT32 XMC写时序配置：ADDR_SETUP=10，DATA_SETUP=12（保持读时序不变）
+		xmc_norsram_timing_init_type rw_t, w_t;
+		xmc_norsram_timing_default_para_init(&rw_t, &w_t);
+		rw_t.subbank = XMC_BANK1_NOR_SRAM4;
+		rw_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
+		rw_t.addr_setup_time = 0x2; // 保持与xmc_init一致
+		rw_t.addr_hold_time = 0x0;
+		rw_t.data_setup_time = 0x2; // 保持与xmc_init一致
+		rw_t.bus_latency_time = 0x0;
+		rw_t.clk_psc = 0x0;
+		rw_t.data_latency_time = 0x0;
+		rw_t.mode = XMC_ACCESS_MODE_A;
+
+		w_t.subbank = XMC_BANK1_NOR_SRAM4;
+		w_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
+		w_t.addr_setup_time = 0x0A; // 10个HCLK
+		w_t.addr_hold_time = 0x0;
+		w_t.data_setup_time = 0x0C; // 12个HCLK
+		w_t.bus_latency_time = 0x0;
+		w_t.clk_psc = 0x0;
+		w_t.data_latency_time = 0x0;
+		w_t.mode = XMC_ACCESS_MODE_A;
+
+		xmc_nor_sram_timing_config(&rw_t, &w_t);
 	}
 	// 	printf(" LCD ID:%x\r\n",lcddev.id); //打印LCD ID
 	if (lcddev.id == 0X9341) // 9341初始化
@@ -2952,9 +3025,9 @@ void LCD_Fill(u16 sx, u16 sy, u16 ex, u16 ey, u16 color)
 void LCD_Color_Fill(u16 sx, u16 sy, u16 ex, u16 ey, u16 *color)
 {
 	u16 height, width;
-	int transfer=0;
+	int transfer = 0;
 	u16 i, j;
-	width = ex - sx+1;  // 得到填充的宽度
+	width = ex - sx + 1;  // 得到填充的宽度
 	height = ey - sy + 1; // 高度
 	LCD_WR_REG(lcddev.setxcmd);
 	LCD_WR_DATA(sx >> 8);
@@ -2968,7 +3041,12 @@ void LCD_Color_Fill(u16 sx, u16 sy, u16 ex, u16 ey, u16 *color)
 	LCD_WR_DATA((ey) & 0XFF);
 	LCD_WriteRAM_Prepare(); // 开始写入GRAM
 
-		LCD_DMA_Write((u32)&color[0],(uint32_t)LCD_BASE+2,width*height);
+	//	for (int i = 0; i < width * height; i++)
+	//	{
+	//		LCD_WR_DATA(color[i]);
+	//	}
+
+	LCD_DMA_Write((u32)&color[0], (uint32_t)LCD_BASE + 2, width * height);
 }
 // 画线
 // x1,y1:起点坐标

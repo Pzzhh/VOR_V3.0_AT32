@@ -27,7 +27,7 @@ static void Timer_init(int ms)
   TMR10->ctrl1_bit.tmren = TRUE;
   TMR10->iden_bit.ovfien = TRUE;
   TMR10->ists = 0;
-  nvic_priority_group_config(NVIC_PRIORITY_GROUP_2);
+  //nvic_priority_group_config(NVIC_PRIORITY_GROUP_2);
   nvic_irq_enable(TMR1_OVF_TMR10_IRQn, 0, 3);
   // GPIOF->ODR |= GPIO_ODR_ODR_15;
 }

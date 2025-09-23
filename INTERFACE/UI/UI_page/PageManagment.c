@@ -132,6 +132,7 @@ void UI_Page_Management_Init()
 	Message_Center_Read_prinft("Ctrl", &value, sizeof(int), "isNeedSetup");
 	// value = 0;
 	create_custom_keyboard(lv_scr_act(), 1);
+	value = 0;
 #ifndef ATM32F43_xx
 	value = 0;
 #endif

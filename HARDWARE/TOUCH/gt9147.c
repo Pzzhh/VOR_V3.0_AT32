@@ -1,7 +1,7 @@
 #include "gt9147.h"
 //#include "touch.h"
 #include "ctiic.h"
-#include "usart.h"
+// #include "usart.h"
 #include "delay.h" 
 #include "string.h" 
 #include "lcd.h" 
@@ -116,22 +116,43 @@ static int isGt9147=0;
 u8 GT9147_Init(void)
 {
 	u8 temp[5]; 
-	GPIO_InitTypeDef GPIO_InitStructure;
+	// GPIO_InitTypeDef GPIO_InitStructure;
 
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG | RCC_AHB1Periph_GPIOB, ENABLE); // 使能GPIOB,C时钟
+	// RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG | RCC_AHB1Periph_GPIOB, ENABLE); // 使能GPIOB,C时钟
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;		   // PB1设置为上拉输入
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;	   // 输入模式
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	   // 推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz; // 100MHz
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;	   // 上拉
-	GPIO_Init(GPIOB, &GPIO_InitStructure);			   // 初始化
+	// GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;		   // PB1设置为上拉输入
+	// GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;	   // 输入模式
+	// GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	   // 推挽输出
+	// GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz; // 100MHz
+	// GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;	   // 上拉
+	// GPIO_Init(GPIOB, &GPIO_InitStructure);			   // 初始化
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;		   // PC13设置为推挽输出
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;	   // 输出模式
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	   // 推挽输出
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz; // 100MHz
-	GPIO_Init(GPIOG, &GPIO_InitStructure);			   // 初始化
+	// GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;		   // PC13设置为推挽输出
+	// GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;	   // 输出模式
+	// GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	   // 推挽输出
+	// GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz; // 100MHz
+	// GPIO_Init(GPIOG, &GPIO_InitStructure);			   // 初始化
+
+	gpio_init_type gpio_init_struct;
+	crm_periph_clock_enable(CRM_GPIOB_PERIPH_CLOCK, TRUE);
+	crm_periph_clock_enable(CRM_GPIOF_PERIPH_CLOCK, TRUE);
+
+	gpio_default_para_init(&gpio_init_struct);
+	// PB0 as output pull-up (SCL)
+	gpio_init_struct.gpio_pins = GPIO_PINS_1;
+	gpio_init_struct.gpio_mode = GPIO_MODE_INPUT;
+	gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+	gpio_init_struct.gpio_pull = GPIO_PULL_UP;
+	gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_MODERATE;
+	gpio_init(GPIOB, &gpio_init_struct);
+
+	// PF11 as output pull-up (SDA)
+	gpio_init_struct.gpio_pins = GPIO_PINS_5;
+	gpio_init_struct.gpio_mode = GPIO_MODE_OUTPUT;
+	gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+	gpio_init_struct.gpio_pull = GPIO_PULL_UP;
+	gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_MODERATE;
+	gpio_init(GPIOG, &gpio_init_struct);
 	
 	GT_RST=0;				//复位
 	delay_ms(10);

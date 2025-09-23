@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
  * @Date: 2024-08-05 14:28:29
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2024-09-05 18:17:30
+ * @LastEditTime: 2025-09-22 14:26:02
  * @FilePath: \ubuntud:\workfile\项目3 vor\software\VOR_V2.0\HARDWARE\INC\INC_CTRl.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -25,9 +25,9 @@ void INC_IO_Set(uint8_t state)
         up,
         down
     };
-    volatile uint16_t *const gpio_reg = (uint16_t *)&GPIOF->BSRRL;
-    const uint16_t gpio_pinUP = GPIO_Pin_14;
-    const uint16_t gpio_pinDown = GPIO_Pin_13;
+    volatile uint16_t *const gpio_reg = (uint16_t *)&GPIOF->scr;
+    const uint16_t gpio_pinUP = GPIO_PINS_14;
+    const uint16_t gpio_pinDown = GPIO_PINS_13;
 #if 1
     if (state == down)
     {
@@ -67,13 +67,10 @@ void INC_IO_Set(uint8_t state)
 
 void INC_IO_INIT()
 {
-    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOFEN;
+    CRM->ahben1_bit.gpiofen = 1;
 
-    GPIOF->MODER &= ~GPIO_MODER_MODER13;
-    GPIOF->MODER &= ~GPIO_MODER_MODER14;
-
-    GPIOF->MODER |= GPIO_MODER_MODER13_0;
-    GPIOF->MODER |= GPIO_MODER_MODER14_0;
+    GPIOF->cfgr_bit.iomc13 = 1;
+    GPIOF->cfgr_bit.iomc14 = 1;
 
     INC_IO_Set(0);
 }

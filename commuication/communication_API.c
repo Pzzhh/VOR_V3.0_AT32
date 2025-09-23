@@ -16,13 +16,13 @@
 #endif
 
 #if USE_USB
-#include "usbd_usr.h"
-#include "usbd_desc.h"
+// #include "usbd_usr.h"
+// #include "usbd_desc.h"
 
-#include "usbd_cdc_core.h"
+// #include "usbd_cdc_core.h"
 
-extern USB_OTG_CORE_HANDLE USB_OTG_dev;
-extern USBD_Usr_cb_TypeDef USR_cb;
+// extern USB_OTG_CORE_HANDLE USB_OTG_dev;
+// extern USBD_Usr_cb_TypeDef USR_cb;
 #endif
 
 #if USE_BL
@@ -134,11 +134,11 @@ uint8_t HAL_BL_USART_Server(void)
 uint8_t HAL_USB_INIT()
 {
 #if USE_USB
-	USBD_Init(&USB_OTG_dev,
-		USB_OTG_FS_CORE_ID,
-		&USR_desc,
-		&USBD_CDC_cb,
-		&USR_cb);
+	// USBD_Init(&USB_OTG_dev,
+	// 	USB_OTG_FS_CORE_ID,
+	// 	&USR_desc,
+	// 	&USBD_CDC_cb,
+	// 	&USR_cb);
 #endif
 	return 1;
 }
@@ -146,7 +146,7 @@ uint8_t HAL_USB_INIT()
 int HAL_USB_Isconnect()
 {
 #if USE_USB
-extern	vu8 bDeviceState;	
+// extern	vu8 bDeviceState;	
 #endif
 	//return bDeviceState;
 }
@@ -155,8 +155,8 @@ uint8_t HAL_USB_TX(uint8_t* str, uint16_t len)
 {
 #ifdef ATM32F43_xx
 
-	extern void usbd_cdc_senddata(void* pdev, uint8_t * str, uint16_t len);
-	usbd_cdc_senddata(&USB_OTG_dev, str, len);
+	// extern void usbd_cdc_senddata(void* pdev, uint8_t * str, uint16_t len);
+	// usbd_cdc_senddata(&USB_OTG_dev, str, len);
 #endif // ATM32F43_xx
 	return 0;
 }

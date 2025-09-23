@@ -1,5 +1,5 @@
 #include "delay.h"
-#include "sys.h"
+#include "at32f435_437.h"
 //////////////////////////////////////////////////////////////////////////////////
 // 如果使用OS,则包括下面的头文件（以ucos为例）即可.
 #if SYSTEM_SUPPORT_OS
@@ -113,24 +113,7 @@ void SysTick_Handler(void)
 // SYSCLK:系统时钟频率
 void delay_init(u8 SYSCLK)
 {
-	RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
-
-	// #if SYSTEM_SUPPORT_OS 						//如果需要支持OS.
-	// 	u32 reload;
-	// #endif
-	//  	SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
-	// 	fac_us=SYSCLK/8;						//不论是否使用OS,fac_us都需要使用
-	// #if SYSTEM_SUPPORT_OS 						//如果需要支持OS.
-	// 	reload=SYSCLK/8;						//每秒钟的计数次数 单位为M
-	// 	reload*=1000000/delay_ostickspersec;	//根据delay_ostickspersec设定溢出时间
-	// 											//reload为24位寄存器,最大值:16777216,在168M下,约合0.7989s左右
-	// 	fac_ms=1000/delay_ostickspersec;		//代表OS可以延时的最少单位
-	// 	SysTick->CTRL|=SysTick_CTRL_TICKINT_Msk;   	//开启SYSTICK中断
-	// 	SysTick->LOAD=reload; 					//每1/delay_ostickspersec秒中断一次
-	// 	SysTick->CTRL|=SysTick_CTRL_ENABLE_Msk; 	//开启SYSTICK
-	// #else
-	// 	fac_ms=(u16)fac_us*1000;				//非OS下,代表每个ms需要的systick时钟数
-	// #endif
+	CRM->apb1en_bit.adc14en = 1;
 }
 
 #if SYSTEM_SUPPORT_OS // 如果需要支持OS.
@@ -194,23 +177,36 @@ void delay_us(u32 nus)
 	// {
 	// }
 	// return;
-	uint32_t temp = 1 | TIM_CR1_OPM;
+	// uint32_t temp = 1 | TIM_CR1_OPM;
 	if (nus > 1000)
 		nus = 5000;
-
-
-	TIM14->CR1 = 0;
-	TIM14->PSC = (168/2) - 1;
-	TIM14->ARR = (nus*10) - 1;
-	TIM14->CNT = 0;
-	__DSB();
-	
-	TIM14->CR1 |= temp;
-	while (TIM14->CR1&TIM_CR1_CEN)
+	if(nus==0)
 	{
+				TMR14->ctrl1 = 0;
+		TMR14->div = (168 / 2) - 1;
+		TMR14->pr = 5;
+		TMR14->cval = 0;
+		__DSB();
+		TMR14->ists = 0;
+		TMR14->ctrl1_bit.tmren = 1;
+		while (TMR14->ists_bit.ovfif == 0)
+		{
+		}
+	}else
+	{
+		TMR14->ctrl1 = 0;
+		TMR14->div = (168 / 2) - 1;
+		TMR14->pr = (nus * 10) - 1;
+		TMR14->cval = 0;
+		__DSB();
+		TMR14->ists = 0;
+		TMR14->ctrl1_bit.tmren = 1;
+		while (TMR14->ists_bit.ovfif == 0)
+		{
+		}
 	}
+	
 	return;
-
 }
 // 延时nms
 // 注意nms的范围
@@ -231,48 +227,45 @@ void delay_xms(u16 nms)
 	// SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk; // 关闭计数器
 	// SysTick->VAL = 0X00;					   // 清空计数器
 }
-int xx=0;
+int xx = 0;
 // 延时nms
 // nms:0~65535
 void delay_ms(u16 nms)
 {
-	uint32_t temp = 1 | TIM_CR1_OPM;
-	if (nms > 1000)
+	if (nms > 5000)
 		nms = 5000;
-
-
-	TIM14->CR1 = 0;
-	TIM14->PSC = (16800/2) - 1;
-	TIM14->ARR = (nms*10) - 1;
-	TIM14->CNT = 0;
+	TMR14->ctrl1 = 0;
+	TMR14->div = (16800 / 2) - 1;
+	TMR14->pr = (nms * 10) - 1;
+	TMR14->cval = 0;
 	__DSB();
-	
-	TIM14->CR1 |= temp;
-	while (TIM14->CR1&TIM_CR1_CEN)
+	TMR14->ists = 0;
+	TMR14->ctrl1_bit.tmren = 1;
+	while (TMR14->ists_bit.ovfif == 0)
 	{
 	}
 	return;
-
 }
 
 void jump_to_bootloader(void)
 {
-    // 禁用所有中断
-    __disable_irq();
+	// 禁用所有中断
+	__disable_irq();
 
-    // 设置 Bootloader 地址
-    uint32_t bootloader_address = 0x1FFF0000;
+	// 设置 Bootloader 地址
+	uint32_t bootloader_address = 0x1FFF0000;
 
-    // 定义一个指向函数的指针，指向 Bootloader 的复位向量
-    void (*bootloader_entry)(void) = (void (*)(void))(*((uint32_t *)(bootloader_address + 4)));
+	// 定义一个指向函数的指针，指向 Bootloader 的复位向量
+	void (*bootloader_entry)(void) = (void (*)(void))(*((uint32_t *)(bootloader_address + 4)));
 
-    // 设置主堆栈指针
-	RCC->AHB1RSTR=RCC_AHB1RSTR_OTGHRST;
-	RCC->AHB1RSTR=0;
-    __set_MSP(*((uint32_t *)bootloader_address));
+	// 设置主堆栈指针
+	CRM->ahbrst2_bit.otgfs1rst=1;
+	CRM->ahbrst2_bit.otgfs1rst=0;
 
-    // 跳转到 Bootloader
-    bootloader_entry();
+	__set_MSP(*((uint32_t *)bootloader_address));
+
+	// 跳转到 Bootloader
+	bootloader_entry();
 }
 
 #endif

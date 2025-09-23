@@ -2,15 +2,14 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-16 09:37:35
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-06-20 14:19:06
+ * @LastEditTime: 2025-09-23 05:17:46
  * @FilePath: \USERd:\workfile\项目11 robomaster\software\01 code\ovor\template\c610\C610.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE10
  */
 #include "C610.h"
 #include "../c610/pid.h"
 #include "../CAN/can.h"
-#include "stm32f4xx.h"
-// #include "Gui.h"
+#include "at32f435_437.h"
 
 static motor_measure_t motor_chassis[7];
 extern struct data1 State;
@@ -164,40 +163,15 @@ void C610_RX_handler(uint32_t id, uint8_t *msg)
  * @param       无
  * @retval      无
  */
-void C610_CAN_RX_HANDLER(void)
+void C610_CAN_RX_HANDLER(can_rx_message_type *msg)
 {
-    uint8_t rxbuf[8];
-    uint32_t id;
-    uint8_t ide, rtr, len;
-    can_rx_msg(0, &id, &ide, &rtr, &len, rxbuf);
+    // uint8_t rxbuf[8];
+    // uint32_t id;
+    // uint8_t ide, rtr, len;
+    // can_rx_msg(0, &id, &ide, &rtr, &len, rxbuf);
+    uint32_t id = msg->standard_id;
+    uint8_t *rxbuf = msg->data;
     C610_RX_handler(id, rxbuf);
-}
-/**
- * @brief       设置NVIC分组
- * @param       group: 0~4,共5组, 详细解释见: sys_nvic_init函数参数说明
- * @retval      无
- */
-static void sys_nvic_priority_group_config(uint8_t group)
-{
-    uint32_t temp, temp1;
-    temp1 = (~group) & 0x07; /* 取后三位 */
-    temp1 <<= 8;
-    temp = SCB->AIRCR;  /* 读取先前的设置 */
-    temp &= 0X0000F8FF; /* 清空先前分组 */
-    temp |= 0X05FA0000; /* 写入钥匙 */
-    temp |= temp1;
-    SCB->AIRCR = temp; /* 设置分组 */
-}
-
-void sys_nvic_init(uint8_t pprio, uint8_t sprio, uint8_t ch, uint8_t group)
-{
-    uint32_t temp;
-    sys_nvic_priority_group_config(group); /* 设置分组 */
-    temp = pprio << (4 - group);
-    temp |= sprio & (0x0f >> group);
-    temp &= 0xf;                           /* 取低四位 */
-    NVIC->ISER[ch / 32] |= 1 << (ch % 32); /* 使能中断位(要清除的话,设置ICER对应位为1即可) */
-    NVIC->IP[ch] |= temp << 4;             /* 设置响应优先级和抢断优先级 */
 }
 
 void C610_Ctrl_Init()

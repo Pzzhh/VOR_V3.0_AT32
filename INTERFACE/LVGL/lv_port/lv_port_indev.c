@@ -26,7 +26,7 @@
 
 static void touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data);
 
-u8 Touch_active_flag = ENABLE;
+u8 Touch_active_flag = 1;
 
 /**********************
  *  STATIC VARIABLES
@@ -80,7 +80,7 @@ void touch_sever(unsigned char mode, unsigned short Pos_XY[3])
                 Pos_data[0] = Pos_data[0] * 256 + touch_iic_data[1];
                 Pos_data[1] = touch_iic_data[2] & 0X0F;
                 Pos_data[1] = Pos_data[1] * 256 + touch_iic_data[3];
-                Pos_data[2] = ENABLE;
+                Pos_data[2] = 1;
             }
             else
             {
@@ -108,7 +108,7 @@ static void touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
     static uint8_t count = 0;
     static u16 Pos_XY[3];
     touch_sever(0, Pos_XY);
-    if (Pos_XY[2] == ENABLE) //?????
+    if (Pos_XY[2] == 1) //?????
     {
         if (count < 5)
             count++;

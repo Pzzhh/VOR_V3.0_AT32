@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-30 14:37:06
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2024-09-06 14:26:22
+ * @LastEditTime: 2025-09-23 05:07:28
  * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\HARDWARE\USART\USART5.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -13,62 +13,47 @@
 #include "stdio.h"
 
 static void (*Interrupt_handle)(uint8_t dr);
-static uint8_t isinit=0;
+static uint8_t isinit = 0;
 
 void USART6_INIT(
     uint32_t boundrate,
     void (*handle)(uint8_t dr))
 {
-    // GPIO端口设置
-    GPIO_InitTypeDef GPIO_InitStructure;
-    USART_InitTypeDef USART_InitStructure;
-    NVIC_InitTypeDef NVIC_InitStructure;
+    gpio_init_type gpio_init_struct;
 
-    Interrupt_handle = handle;
+    /* enable the USART6 and gpio clock */
+    crm_periph_clock_enable(CRM_USART6_PERIPH_CLOCK, TRUE);
+    crm_periph_clock_enable(CRM_GPIOA_PERIPH_CLOCK, TRUE);
 
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG, ENABLE);  // 使能GPIOA时钟
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART6, ENABLE); // 使能UART5时钟
+    gpio_default_para_init(&gpio_init_struct);
 
-    // 串口1对应引脚复用映射
-    GPIO_PinAFConfig(GPIOG, GPIO_PinSource9, GPIO_AF_USART6);  // GPIOA9复用为UART5
-    GPIO_PinAFConfig(GPIOG, GPIO_PinSource14, GPIO_AF_USART6); // GPIOA10复用为UART5
+    /* configure the USART6 tx, rx pin */
+    gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+    gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+    gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
+    gpio_init_struct.gpio_pins = GPIO_PINS_9;
+    gpio_init_struct.gpio_pull = GPIO_PULL_UP;
+    gpio_init(GPIOG, &gpio_init_struct);
+    gpio_pin_mux_config(GPIOG, GPIO_PINS_SOURCE9, GPIO_MUX_8);
+    gpio_init_struct.gpio_pins = GPIO_PINS_14;
+    gpio_init_struct.gpio_pull = GPIO_PULL_UP;
+    gpio_init(GPIOG, &gpio_init_struct);
+    gpio_pin_mux_config(GPIOG, GPIO_PINS_SOURCE14, GPIO_MUX_8);
 
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;        //
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;      // 复用功能
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // 速度50MHz
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;    // 推挽复用输出
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;      // 上拉
-    GPIO_Init(GPIOG, &GPIO_InitStructure);            //
+    //nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
+    nvic_irq_enable(USART6_IRQn, 0, 0);
 
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14;         // GPIOA9与GPIOA10
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;      // 复用功能
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // 速度50MHz
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;    // 推挽复用输出
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;      // 上拉
-    GPIO_Init(GPIOG, &GPIO_InitStructure);            // 初始化PA9，PA10
+    /* configure USART6 param */
+    usart_init(USART6, boundrate, USART_DATA_8BITS, USART_STOP_1_BIT);
+    usart_parity_selection_config(USART6, USART_PARITY_NONE);
+    usart_transmitter_enable(USART6, TRUE);
+    usart_receiver_enable(USART6, TRUE);
+    usart_enable(USART6, TRUE);
 
-    // UART5 初始化设置
-    USART_InitStructure.USART_BaudRate = boundrate;                                 // 波特率设置
-    USART_InitStructure.USART_WordLength = USART_WordLength_8b;                     // 字长为8位数据格式
-    USART_InitStructure.USART_StopBits = USART_StopBits_1;                          // 一个停止位
-    USART_InitStructure.USART_Parity = USART_Parity_No;                             // 无奇偶校验位
-    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None; // 无硬件数据流控制
-    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;                 // 收发模式
-    USART_Init(USART6, &USART_InitStructure);                                       // 初始化串口1
-
-    USART_Cmd(USART6, ENABLE); // 使能串口1
-
-    // #if EN_UART5_RX
-    USART_ITConfig(USART6, USART_IT_RXNE, ENABLE); // 开启相关中断
-		USART_ITConfig(USART6, USART_IT_TXE, ENABLE); // 开启相关中断
-
-    // UART5 NVIC 配置
-    NVIC_InitStructure.NVIC_IRQChannel = USART6_IRQn;         // 串口1中断通道
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0; // 抢占优先级3
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;        // 子优先级3
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;           // IRQ通道使能
-    NVIC_Init(&NVIC_InitStructure);                           // 根据指定的参数初始化VIC寄存器、
-		isinit=1;
+    usart_interrupt_enable(USART6, USART_RDBF_INT, TRUE);
+   
+    isinit = 1;
+    isinit = 1;
 }
 static char printf_buf[100];
 static uint16_t send_index, send_len;
@@ -89,37 +74,37 @@ uint8_t USART6_FIFO_Send(uint8_t *dr)
 
 uint8_t USART6_Send_Package(char *string, uint16_t size)
 {
-		if(isinit==0)
-		 return 1;
+    if (isinit == 0)
+        return 1;
     if (send_len)
         return 0;
     memcpy(printf_buf, string, size);
     send_len = size;
-    USART_ITConfig(USART6, USART_IT_TXE, ENABLE); // 开启相关中断
+    usart_interrupt_enable(USART6, USART_TDBE_INT, TRUE); // 开启相关中断
     return 1;
 }
 
-void USART6_IRQHandler(void) // 串口1中断服务程序
+void USART6_IRQHandler(void) // 串口6中断服务程序
 {
-    if (USART_GetITStatus(USART6, USART_IT_RXNE) != RESET) // 接收中断(接收到的数据必须??0x0d 0x0a结尾)
+    if (usart_flag_get(USART6, USART_RDBF_FLAG) != RESET) // 接收中断(接收到的数据必须??0x0d 0x0a结尾)
     {
-        uint8_t dr = USART6->DR;
+        uint8_t dr = usart_data_receive(USART6);
         if (Interrupt_handle != 0)
             Interrupt_handle(dr);
-        USART_ClearITPendingBit(USART6, USART_IT_RXNE);
+        usart_flag_clear(USART6, USART_RDBF_FLAG);
     }
-    if (USART_GetITStatus(USART6, USART_IT_TXE))
+    if (usart_flag_get(USART6, USART_TDBE_FLAG))
     {
         uint8_t dr;
         if (USART6_FIFO_Send(&dr))
         {
-            USART6->DR = dr;
+            usart_data_transmit(USART6, dr);
         }
         else
         {
-            USART_ITConfig(USART6, USART_IT_TXE, DISABLE);
+            usart_interrupt_enable(USART6, USART_TDBE_INT, FALSE);
         }
-				 USART_ClearITPendingBit(USART6, USART_IT_TXE);
+        usart_flag_clear(USART6, USART_TDBE_FLAG);
     }
-//    USART6->SR = 0;
+    //    USART6->SR = 0;
 }

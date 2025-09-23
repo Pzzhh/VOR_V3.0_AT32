@@ -17,7 +17,7 @@
 #define ONE_BUFFER 1
 #define TWO_BUFFER 0
 
-#define COLOR_SIZE         (150*100)
+#define COLOR_SIZE         (0XFFFF)
 
 //#define buf_1 (lv_color_t*)((u32)(0x68000000))
 /**********************
@@ -117,7 +117,7 @@ static void disp_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_colo
 {
 	   complete_disp_drv=disp_drv;
 		LCD_Color_Fill(area->x1,area->y1,area->x2,area->y2,(u16*)color_p);
-     
+//      lv_disp_flush_ready(complete_disp_drv);
     /* IMPORTANT!!!
      * Inform the graphics library that you are ready with the flushing*/
     

@@ -1,47 +1,56 @@
+/*
+ * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @Date: 2025-09-11 15:50:36
+ * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @LastEditTime: 2025-09-22 12:11:09
+ * @FilePath: \Slave_At32\HARDWARE\FAN\FAN.c
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 #include "FAN.h"
 #include "at32f435_437.h"
 
 void FAN_Init()
 {
-    RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
-    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
-    TIM4->CCR1 = 0;
+    CRM->apb1en_bit.tmr4en = 1;
+    CRM->ahben1_bit.gpioben = 1;
 
-    GPIOB->MODER &= ~GPIO_MODER_MODER6;
-    GPIOB->MODER |= GPIO_MODER_MODER6_1;
+    TMR4->c1dt = 0;
 
-    GPIOB->AFR[0] |= 0x2 << (4 * (6)); // PA8 corresponds to AFR[1] (AFRH), 0th position
+    GPIOB->cfgr_bit.iomc6 = 2; // AF2 for TMR4_CH1 on PB6
+    // Alternate function mode for PB6
 
-    // Set the prescaler value to have TIM4 counter clock = 1 MHz
-    TIM4->PSC = 84 - 1; // APB2 clock is 84 MHz
+
+    GPIOB->muxl |= 0x2 << (4 * (6)); // PB6 AF2
+
+    // Set the prescaler value to have TMR4 counter clock = 1 MHz
+    TMR4->pr = 42 - 1; // APB1 clock is 84 MHz / 2 = 42 MHz
 
     // Set the ARR value to have a PWM frequency of 1 kHz
-    TIM4->ARR = 1000 - 1;
+    TMR4->rpr = 1000 - 1;
 
     // Set the CCR1 value to have a duty cycle of 50%
-    TIM4->CCR1 = 500;
+    TMR4->c1dt = 500;
 
-    // Configure the TIM4 channel 1 in PWM mode 1
-    TIM4->CCMR1 &= ~TIM_CCMR1_OC1M;
-    TIM4->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;
+    // Configure the TMR4 channel 1 in PWM mode 1
+    TMR4->cm1_output_bit.c1octrl = 6; // PWM mode 1
 
     // Enable the output compare 1 preload register
-    TIM4->CCMR1 |= TIM_CCMR1_OC1PE;
+    TMR4->cm1_output_bit.c1oien = 1;
 
     // Enable the capture/compare 1 output
-    TIM4->CCER |= TIM_CCER_CC1E;
+    TMR4->cctrl_bit.c1en = 1;
 
     // Enable auto-reload preload
-    TIM4->CR1 |= TIM_CR1_ARPE;
+    TMR4->ctrl1_bit.prben = 1;
 
-    // Enable the TIM4 main output
-    TIM4->BDTR |= TIM_BDTR_MOE;
+    // Enable the TMR4 main output
+    TMR4->brk_bit.aoen = 1;
 
-    // Enable the TIM4 counter
-    TIM4->CR1 |= TIM_CR1_CEN;
+    // Enable the TMR4 counter
+    TMR4->ctrl1_bit.tmren = 1;
 }
 
 void FAN_Ctrl(uint8_t pwn_precent)
 {
-    TIM4->CCR1 = pwn_precent*10;
+    TMR4->c1dt = pwn_precent*10;
 }

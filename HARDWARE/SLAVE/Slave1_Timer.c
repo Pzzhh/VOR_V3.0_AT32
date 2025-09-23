@@ -6,9 +6,9 @@
 float acc_angle = 0;
 float soft_angle_CNT;
 Slave_Function_CB function_cb;
-void TIM1_BRK_TIM9_IRQHandler(void)
+void TMR1_BRK_TMR9_IRQHandler(void)
 {
-    if (TIM9->SR & TIM_IT_Update) // ????????????
+    if (TMR9->ists_bit.ovfif) // ????????????
     {
         if (function_cb != 0)
         {
@@ -34,7 +34,7 @@ void TIM1_BRK_TIM9_IRQHandler(void)
         //        Motor_Spd_Pid(); // avoid c601 unexpect movement
         // 补停机代码
     }
-    TIM9->SR = (uint16_t)~TIM_IT_Update;
+    TMR9->ists = (uint16_t)~TMR_OVF_FLAG;
 }
 // 当handler返回1时停止状态机
 void Slave1_Set_Machine_Cb(Slave_Function_CB cb)
@@ -43,9 +43,9 @@ void Slave1_Set_Machine_Cb(Slave_Function_CB cb)
     //    Slave1_En_IO(1);
     // Slave1_Step_Generator_Init(50000, 10);
     Slave_server_Init();
-    TIM9->CR1 &= ~TIM_CR1_CEN;
+    TMR9->ctrl1_bit.tmren = 0;
     function_cb = cb;
-    TIM9->CR1 |= TIM_CR1_CEN;
+    TMR9->ctrl1_bit.tmren = 1;
 }
 
 uint8_t Slave1_Get_Machine_state()
@@ -60,39 +60,13 @@ void Step_Phase_Set(u32 arr, u32 psc)
 {
     if (arr == 0 && psc == 0)
     {
-        TIM_Cmd(TIM1, DISABLE);
+        TMR1->ctrl1_bit.tmren = 0;
         return;
     }
     Slave1_En_IO(1);
-#if 1
-    // 此部分需手动修改IO口设置
-    TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
-    // TIM_OCInitTypeDef  TIM_OCInitStructure;
-
-    TIM_TimeBaseStructure.TIM_Prescaler = psc;                  // 定时器分频
-    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up; // 向上计数模式
-    TIM_TimeBaseStructure.TIM_Period = arr;                     // 自动重装载值
-    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-
-    TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure); // 初始化定时器14
-    TIM1->CCR1 = arr / 2;
-
-    TIM_Cmd(TIM1, ENABLE); // 使能TIM14
-#else
-    TIM1->CR1 &= ~TIM_CR1_CEN;
-    uint16_t cval = TIM1->CNT + 1;
-    TIM1->PSC = 0;
-    TIM1->PSC = psc;
-    if (TIM1->CCR1 > TIM1->CNT)
-        TIM1->CCR1 = 0xffff;
-    else
-        TIM1->CCR1 = 0x0;
-    deg = (float)TIM1->CNT / TIM1->ARR;
-    TIM1->CNT = (arr)*cval / (TIM1->ARR + 1) - 1;
-    TIM1->ARR = arr - 1;
-    TIM1->CCR1 = arr / 2 - 1;
-    TIM1->CR1 |= TIM_CR1_CEN;
-#endif
+    tmr_base_init(TMR1, arr, psc);
+    TMR1->c1dt = arr / 2;
+    TMR1->ctrl1_bit.tmren = 1;
 }
 
 void SRV1_Encoder_Init()
@@ -104,109 +78,83 @@ void SRV1_Encoder_Init()
     // const uint32_t ARR_VALUE = 2097156;
     const uint16_t ch1_pin = 5;
     const uint16_t ch2_pin = 3;
-    RCC->APB1ENR |= (RCC_APB1ENR_TIM2EN);
-    RCC->AHB2ENR |= RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOAEN;
-    // Configure TIM2 in Encoder mode 3 (count on both TI1FP1 and TI2FP2 edges)
-    TIM2->SMCR &= ~TIM_SMCR_SMS;
-    TIM2->SMCR |= TIM_SMCR_SMS_0 | TIM_SMCR_SMS_1; // Encoder mode 3
+    CRM->apb1en_bit.tmr2en = 1;
+    CRM->ahben1_bit.gpioben = 1;
+    CRM->ahben1_bit.gpioaen = 1;
+    // Configure TMR2 in Encoder mode 3 (count on both TI1FP1 and TI2FP2 edges)
+    TMR2->ctrl1_bit.pmen = 1;   // 32bit enable
+    TMR2->stctrl_bit.smsel = 3; // encoder mode c
+    TMR2->cm1_input_bit.c1df = 0;
+    TMR2->cm1_input_bit.c2df = 0;
+    TMR2->cm1_input_bit.c1c = 2;
+    TMR2->cm1_input_bit.c2c = 2;
+    tmr_base_init(TMR2, 1073741, 0);
+    TMR2->ctrl1_bit.tmren = 1;
 
-    // Configure input capture for both channels
-    TIM2->CCMR1 &= ~(TIM_CCMR1_CC1S | TIM_CCMR1_CC2S);
-    TIM2->CCMR1 |= TIM_CCMR1_CC1S_1 | TIM_CCMR1_CC2S_1; // CC1 channel as input, mapped on TI1; CC2 channel as input, mapped on TI2
+    GPIOA->cfgr_bit.iomc5 = 2;
+    GPIOB->cfgr_bit.iomc3 = 2;
 
-    // Set the polarity and filter (if needed)
-    TIM2->CCER &= ~(TIM_CCER_CC1P | TIM_CCER_CC2P);    // Non-inverted polarity
-    TIM2->CCMR1 &= ~(TIM_CCMR1_IC1F | TIM_CCMR1_IC2F); // No filter
+    GPIOA->muxl |= 0x01 << 20; // set tmr 2 alternate channel
+    GPIOB->muxl |= 0x01 << 12;
 
-    // Enable the counter
-    TIM2->CR1 |= TIM_CR1_CEN;
-    // TIM2->SMCR |= 0x03; // use clock input encoder c mode
-
-    // TIM2->CCMR1 |= 0x01;
-    // TIM2->CCMR1 |= (0x01 << 8);
-
-    // TIM2->CCER |= TIM_CCER_CC1E;
-    // TIM2->CCER |= TIM_CCER_CC2E;
-
-    GPIOA->MODER |= (0x02 << ch1_pin * 2);
-    GPIOB->MODER |= (0x02 << ch2_pin * 2);
-
-    GPIOA->AFR[0] |= 0x01 << 20; // set tmr 2 alternate channel
-    GPIOB->AFR[0] |= 0x01 << 12;
-
-    TIM2->ARR = 1073741;
-    TIM2->PSC = 0;
-    TIM2->CR1 |= TIM_CR1_ARPE;
-    TIM2->CR1 |= TIM_CR1_CEN;
+    TMR2->pr = 1073741;
+    TMR2->div = 0;
+    TMR2->ctrl1_bit.prben = 1;
+    TMR2->ctrl1_bit.tmren = 1;
 }
 
 void Slave_server_Init(void)
 {
-    TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;
-    NVIC_InitTypeDef NVIC_InitStructure;
 
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM9, ENABLE); /// 使能TIM9时钟
+    CRM->apb2en_bit.tmr9en = 1; /// 使能TMR9时钟
 
-    TIM_TimeBaseInitStructure.TIM_Period = 499; // 自动重装载值
-#ifdef HARDWARE_TEST
-    TIM_TimeBaseInitStructure.TIM_Prescaler = 167; // 定时器分频
-#else
-    TIM_TimeBaseInitStructure.TIM_Prescaler = 336 - 1; // 定时器分频
-#endif
-    TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up; // 向上计数模式
-    TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+    tmr_cnt_dir_set(TMR9, TMR_COUNT_UP);
+    tmr_clock_source_div_set(TMR9, TMR_CLOCK_DIV1);
+    tmr_base_init(TMR9, 499, 335); // 初始化TMR9
 
-    TIM_TimeBaseInit(TIM9, &TIM_TimeBaseInitStructure); // 初始化TIM9
+    tmr_interrupt_enable(TMR9, TMR_OVF_INT, TRUE);
 
-    TIM_ITConfig(TIM9, TIM_IT_Update, ENABLE);
-
-    NVIC_InitStructure.NVIC_IRQChannel = TIM1_BRK_TIM9_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x00;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x00;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
+    nvic_irq_enable(TMR1_BRK_TMR9_IRQn, 0x00, 0x00);
     SRV1_Encoder_Init();
 }
 
 void Slave1_Step_Generator_Init(uint32_t arr, uint32_t psc)
 {
-    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
-    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
-    TIM1->CCR1 = arr / 2;
+    CRM->apb2en_bit.tmr1en = 1;
+    CRM->ahben1_bit.gpioaen = 1;
+    TMR1->c1dt = arr / 2;
 
-    GPIOA->MODER &= ~GPIO_MODER_MODER8;
-    GPIOA->MODER |= GPIO_MODER_MODER8_1;
+    GPIOA->cfgr_bit.iomc8 = 2;
 
-    GPIOA->AFR[1] |= 0x1 << (4 * (8 - 8)); // PA8 corresponds to AFR[1] (AFRH), 0th position
-
-    // Set the prescaler value to have TIM1 counter clock = 1 MHz
-    TIM1->PSC = 84 - 1; // APB2 clock is 84 MHz
+  
+    GPIOA->muxh_bit.muxh8 = 1; // PA8
+    // Set the prescaler value to have TMR1 counter clock = 1 MHz
+    TMR1->div = 84 - 1; // APB2 clock is 84 MHz
 
     // Set the ARR value to have a PWM frequency of 1 kHz
-    TIM1->ARR = 1000 - 1;
+    TMR1->pr = 1000 - 1;
 
     // Set the CCR1 value to have a duty cycle of 50%
-    TIM1->CCR1 = 500;
+    TMR1->c1dt = 500;
 
-    // Configure the TIM1 channel 1 in PWM mode 1
-    TIM1->CCMR1 &= ~TIM_CCMR1_OC1M;
-    TIM1->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;
+    // Configure the TMR1 channel 1 in PWM mode 1
+    TMR1->cm1_output_bit.c1octrl = 6;
 
     // Enable the output compare 1 preload register
-    TIM1->CCMR1 |= TIM_CCMR1_OC1PE;
+    TMR1->cm1_output_bit.c1oben = 1;
 
     // Enable the capture/compare 1 output
-    TIM1->CCER |= TIM_CCER_CC1E;
+    TMR1->cctrl_bit.c1en = 1;
 
     // Enable auto-reload preload
-    TIM1->CR1 |= TIM_CR1_ARPE;
+    TMR1->ctrl1_bit.prben = 1;
 
-    // Enable the TIM1 main output
-    TIM1->BDTR |= TIM_BDTR_MOE;
+    // Enable the TMR1 main output
+    TMR1->brk_bit.oen = 1;
 
-    // Enable the TIM1 counter
-    TIM1->CR1 |= TIM_CR1_CEN;
-    TIM1->CCR1 = arr / 2;
+    // Enable the TMR1 counter
+    TMR1->ctrl1_bit.tmren = 1;
+    TMR1->c1dt = arr / 2;
 
     Slave_server_Init();
 }
@@ -214,13 +162,13 @@ void Slave1_Step_Generator_Init(uint32_t arr, uint32_t psc)
 void tim_f_set(int f)
 {
 
-    TIM_TypeDef *TIMx = TIM1;
+    tmr_type *TIMx = TMR1;
     u8 Mins_flag;
     int time_arr, time_psc;
     int a, clk = 84000000, c, y, r = 0, t, i;
     if (f == 0)
     {
-        TIM_Cmd(TIM1, 0);
+        tmr_counter_enable(TMR1, FALSE);
         return;
     }
     if (f < 0)
@@ -255,15 +203,15 @@ void tim_f_set(int f)
     if (f > 1000)
     {
         Slave1_Dir_IO(Mins_flag);
-        if (time_arr != TIMx->ARR || time_psc != TIMx->PSC)
+        if (time_arr != TIMx->pr || time_psc != TIMx->div)
             Step_Phase_Set(time_arr, time_psc);
     }
-    TIMx->CR1 |= TIM_CR1_CEN;
+    TIMx->ctrl1 |= 0x0001;
 }
 
 void tim_f_sin_set(int f)
 {
-    TIM_TypeDef *TIMx = TIM1;
+    tmr_type *TIMx = TMR1;
     float angle = -f;
     soft_angle_CNT += (angle / angle_step) / 1000;
     if (soft_angle_CNT > 180)
@@ -312,18 +260,18 @@ void tim_f_sin_set(int f)
 
     time_arr = a / r - 1;
     time_psc = r - 1;
-    if (f > 1000 || TIMx->CNT > TIMx->CCR3)
+    if (f > 1000 || TIMx->cval > TIMx->c3dt)
     {
         Slave1_Dir_IO(Mins_flag);
-        if (time_arr != TIMx->ARR || time_psc != TIMx->PSC)
+        if (time_arr != TIMx->pr || time_psc != TIMx->div)
             Step_Phase_Set(time_arr, time_psc);
     }
-    TIMx->CR1 |= TIM_CR1_CEN;
+    TIMx->ctrl1 |= 0x0001;
 }
 
 void tim_f_sin_set_Dir(int f)
 {
-    TIM_TypeDef *TIMx = TIM1;
+    tmr_type *TIMx = TMR1;
     u8 Mins_flag;
     int time_arr, time_psc;
     int a, clk = 84000000, c, y, r = 0, t, i;
@@ -363,9 +311,9 @@ void tim_f_sin_set_Dir(int f)
     time_arr = a / r - 1;
     time_psc = r - 1;
     Slave1_Dir_IO(Mins_flag);
-    if (time_arr != TIMx->ARR || time_psc != TIMx->PSC)
+    if (time_arr != TIMx->pr || time_psc != TIMx->div)
         Step_Phase_Set(time_arr, time_psc);
-    TIMx->CR1 |= TIM_CR1_CEN;
+    TIMx->ctrl1 |= 0x0001;
 }
 
 uint8_t Slave_Back(int Tag_Pos)
@@ -376,7 +324,7 @@ uint8_t Slave_Back(int Tag_Pos)
 void Slave_Release()
 {
     Slave1_En_IO(0);
-    TIM_Cmd(TIM1, 0);
+    TMR1->ctrl1_bit.tmren = 0;
 }
 
 u8 Slave_Back_spd(int Tag_Pos, int spd)
@@ -390,12 +338,12 @@ u8 slave_sin_back(void)
 
 int32_t Slave1_Get_Encode()
 {
-    return (int32_t)TIM2->CNT;
+    return (int32_t)TMR2->cval;
 }
 
 void Slave1_Set_Encode(uint32_t cnt)
 {
-    TIM2->CNT = cnt;
+    TMR2->cval = cnt;
 }
 
 int32_t count_record;
@@ -403,7 +351,7 @@ int8_t isEncode_error = 0;
 uint8_t Slave1_Check_Encode_Angle()
 {
     static uint8_t flag = 0;
-    int32_t count = *(int32_t *)&(TIM2->CNT);
+    int32_t count = *(int32_t *)&(TMR2->cval);
     
     if (flag == 0)
     {
@@ -430,7 +378,7 @@ float Slave1_Get_Encode_Angle()
     {
         return soft_angle_CNT;
     }
-    int32_t count = *(int32_t *)&(TIM2->CNT);
+    int32_t count = *(int32_t *)&(TMR2->cval);
     count = count - 1073741 / 2;
     float angle = count / 1073741.0f * 360.0f;
     return angle;
@@ -439,7 +387,7 @@ float Slave1_Get_Encode_Angle()
 float Slave1_Get_Encode_Angle_real()
 {
 
-    int32_t count = *(int32_t *)&(TIM2->CNT);
+    int32_t count = *(int32_t *)&(TMR2->cval);
     count = count - 1073741 / 2;
     float angle = count / 1073741.0f * 360.0f;
     return angle;
@@ -452,13 +400,11 @@ uint8_t Slave1_get_Encode_error()
 
 void Slave1_Set_Encode_Angle(float angle)
 {
-    	soft_angle_CNT = angle;
+        soft_angle_CNT = angle;
     angle = angle + 180;
-	
-    int32_t *count = (int32_t *)&(TIM2->CNT);
+    
+    int32_t *count = (int32_t *)&(TMR2->cval);
     *count = (angle / 360) * 1073741.0f;
 }
 // void Slave1_CMD(Slave1_CMD_Typed cmd,int freq)
-// {
-
-// }
+//

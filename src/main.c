@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
  * @Date: 2025-09-11 15:48:47
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-09-11 15:53:25
+ * @LastEditTime: 2025-09-23 10:18:09
  * @FilePath: \Slave_At32\src\main.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -53,11 +53,133 @@ uint16_t channel1pulse = 0, channel2pulse = 0, channel3pulse = 0, channel4pulse 
  * @param  none
  * @retval none
  */
+// int main(void)
+//{
+//   system_clock_config();
+
+//}
+
+/*
+ * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
+ * @Date: 2024-07-22 15:01:34
+ * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @LastEditTime: 2025-03-31 15:12:35
+ * @FilePath: \USER\main.c
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+
+#include "lcd.h"
+#include "lvgl.h"
+#include "lv_port_disp.h"
+#include "lv_port_indev.h"
+// #include "lv_conf.h"
+#include "ft5206.h"
+#include "gt9147.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "lv_conf.h"
+#include "../INTERFACE/UI/other/system_function.h"
+#include "../other/meassage_center.h"
+
+volatile int idex = 0;
+int *pt = (int *)0x20001000;
+TaskHandle_t Thread_Lvgl;
+
+void TIM3_Int_Init(u16 arr, u16 psc)
+{
+  crm_periph_clock_enable(CRM_TMR3_PERIPH_CLOCK, TRUE);
+
+  TMR3->div = psc;
+  TMR3->pr = arr; // interval 10ms
+  TMR3->cval = 1;
+  TMR3->ctrl1_bit.tmren = TRUE;
+  TMR3->iden_bit.ovfien = TRUE;
+  TMR3->ists = 0;
+  // nvic_priority_group_config(NVIC_PRIORITY_GROUP_2);
+  nvic_irq_enable(TMR3_GLOBAL_IRQn, 0, 3);
+
+}
+
+extern void Task_Stroage_Init();
+extern void controlInit();
+extern void mainpage_init(lv_obj_t *parent);
+extern void UI_Page_Management_Init();
+
+void LVGL_HANDLER()
+{
+  nvic_priority_group_config(NVIC_PRIORITY_GROUP_2);
+  //    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+  /*hardware*/
+  //    ControlDelay(4000);
+  LCD_Init();
+  // atk_md0700_v3_init();
+  FT5206_Init();
+  GT9147_Init();
+  LCD_Display_Dir(1);
+  lv_init();               // lvgl绯荤粺鍒濆?嬶拷?
+  lv_port_disp_init();     // lvgl鏄剧ず鎺ュ彛鍒濆?嬶拷?,鏀惧湪lv_init()鐨勫悗锟??
+  lv_port_indev_init();    // lvgl杈撳叆鎺ュ彛鍒濆?嬶拷?,鏀惧湪lv_init()鐨勫悗锟??
+  TIM3_Int_Init(1999, 288-1); // 瀹氭椂鍣ㄥ垵濮嬪寲(1ms涓?鏂?),鐢ㄤ簬缁檒vgl鎻愪緵1ms鐨勫績璺宠妭锟??
+  /*system init */
+  controlInit();
+  uint8_t buf[20] = {0};
+  int isReady = 0;
+  ControlDelay(100);
+  while (1)
+  {
+    Message_Center_Read_prinft("Ctrl", buf, 20, "ISCtrlInit");
+    if (sscanf(buf, "ISCtrlInit %d", &isReady) == 1)
+    {
+      if (isReady)
+      {
+        break;
+      }
+    }
+    ControlDelay(500);
+  }
+
+  Task_Stroage_Init();
+  UI_Page_Management_Init();
+  while (1)
+  {
+    // GT9147_Scan(0);
+    touch_sever(1, NULL);
+    lv_task_handler();
+    ControlDelay(2);
+  }
+}
+
+void get_pt()
+{
+
+  *pt = *pt + 1;
+}
+
 int main(void)
 {
   system_clock_config();
+  delay_init();
+  DFU_PowerUp_Detection();
+  //    WWDG_Init(0x7F, 0x5F, WWDG_Prescaler_8); // 初始化窗口看门狗，举例参数
+  TaskHandle_t handle;
+  xTaskCreate((TaskFunction_t)LVGL_HANDLER,
+              (const char *)"Outside_motor",
+              (uint16_t)8000,
+              (void *)NULL,
+              (UBaseType_t)3,
+              (TaskHandle_t *)&handle);
 
+  vTaskStartScheduler();
+}
 
+// 定时器3中断服务程序
+void TMR3_GLOBAL_IRQHandler(void)
+{
+  if (TMR3->ists_bit.ovfif) // 溢出中断
+  {
+    lv_tick_inc(2); // lvgl的1ms心跳
+  }
+  TMR3->ists = 0;
 }
 
 /**

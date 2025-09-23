@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-25 14:38:08
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-08-13 14:58:41
+ * @LastEditTime: 2025-09-23 10:05:43
  * @FilePath: \USER  d:\workfile\项目3 vor\software\VOR_V2.0\INTERFACE\UI\control\control_Hardware_API.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -706,26 +706,26 @@ int HAL_CONFIG_READ(uint8_t ID, uint8_t* buffer, uint32_t size)
 	return res;
 #else
 	int res = 0;
-	uint16_t crcValue;
-	uint8_t* BKSbuf = (uint8_t*)0x40024000 + ID * 20;
-	int readcount = BKSbuf[1];
-	uint16_t ReadEnd = readcount + 2;
-	// data format:
-	// first id len [...] crc
-	if (BKSbuf[0] == ID)
-	{
-		if (readcount < 50)
-		{
-			crcValue = crc16_modbus(BKSbuf, readcount + 2);
-			uint16_t Ocrc = BKSbuf[ReadEnd];
-			Ocrc = Ocrc * 256 + BKSbuf[ReadEnd + 1];
-			if (crcValue == Ocrc)
-			{
-				res = readcount;
-				memcpy(buffer, &BKSbuf[2], readcount);
-			}
-		}
-	}
+	// uint16_t crcValue;
+	// uint8_t* BKSbuf = (uint8_t*)0x40024000 + ID * 20;
+	// int readcount = BKSbuf[1];
+	// uint16_t ReadEnd = readcount + 2;
+	// // data format:
+	// // first id len [...] crc
+	// if (BKSbuf[0] == ID)
+	// {
+	// 	if (readcount < 50)
+	// 	{
+	// 		crcValue = crc16_modbus(BKSbuf, readcount + 2);
+	// 		uint16_t Ocrc = BKSbuf[ReadEnd];
+	// 		Ocrc = Ocrc * 256 + BKSbuf[ReadEnd + 1];
+	// 		if (crcValue == Ocrc)
+	// 		{
+	// 			res = readcount;
+	// 			memcpy(buffer, &BKSbuf[2], readcount);
+	// 		}
+	// 	}
+	// }
 	return res;
 #endif
 }
@@ -768,27 +768,27 @@ uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t* buffer, uint32_t size)
 	return 1;
 #else
 	int res = 0;
-	uint16_t crcValue;
-	uint8_t* buf = (uint8_t*)0x40024000 + ID * 20;
-//	int readcount = buf[1];
-	int buf_end;
-	// data format:
-	// first id len [...] crc
-	if (size < 50)
-	{
-		if (size == 0)
-		{
-			memset(&buf[0], 0, 5);
-			return 0;
-		}
-		memcpy(&buf[2], buffer, size);
-		buf[0] = ID;
-		buf[1] = size;
-		crcValue = crc16_modbus(buf, size + 2);
-		buf_end = size + 2;
-		buf[buf_end] = crcValue >> 8;
-		buf[buf_end + 1] = crcValue & 0xff;
-	}
+// 	uint16_t crcValue;
+// 	uint8_t* buf = (uint8_t*)0x40024000 + ID * 20;
+// //	int readcount = buf[1];
+// 	int buf_end;
+// 	// data format:
+// 	// first id len [...] crc
+// 	if (size < 50)
+// 	{
+// 		if (size == 0)
+// 		{
+// 			memset(&buf[0], 0, 5);
+// 			return 0;
+// 		}
+// 		memcpy(&buf[2], buffer, size);
+// 		buf[0] = ID;
+// 		buf[1] = size;
+// 		crcValue = crc16_modbus(buf, size + 2);
+// 		buf_end = size + 2;
+// 		buf[buf_end] = crcValue >> 8;
+// 		buf[buf_end + 1] = crcValue & 0xff;
+// 	}
 	return res;
 #endif
 }
