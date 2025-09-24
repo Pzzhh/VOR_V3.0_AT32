@@ -983,9 +983,9 @@ void LCD_Init(void)
 		xmc_norsram_timing_default_para_init(&rw_t, &w_t);
 		rw_t.subbank = XMC_BANK1_NOR_SRAM4;
 		rw_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
-		rw_t.addr_setup_time = 0x2; // 保持与xmc_init一致
+		rw_t.addr_setup_time = 0x20; // 保持与xmc_init一致
 		rw_t.addr_hold_time = 0x0;
-		rw_t.data_setup_time = 0x2; // 保持与xmc_init一致
+		rw_t.data_setup_time = 0x20; // 保持与xmc_init一致
 		rw_t.bus_latency_time = 0x0;
 		rw_t.clk_psc = 0x0;
 		rw_t.data_latency_time = 0x0;
@@ -993,9 +993,9 @@ void LCD_Init(void)
 
 		w_t.subbank = XMC_BANK1_NOR_SRAM4;
 		w_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
-		w_t.addr_setup_time = 0x3; // 3个HCLK
+		w_t.addr_setup_time = 0x30; // 3个HCLK
 		w_t.addr_hold_time = 0x0;
-		w_t.data_setup_time = 0x2; // 2个HCLK
+		w_t.data_setup_time = 0x20; // 2个HCLK
 		w_t.bus_latency_time = 0x0;
 		w_t.clk_psc = 0x0;
 		w_t.data_latency_time = 0x0;

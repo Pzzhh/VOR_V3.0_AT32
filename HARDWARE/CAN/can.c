@@ -94,8 +94,8 @@ void CAN2_INIT(void)
   /* can baudrate, set boudrate = pclk/(baudrate_div *(1 + bts1_size + bts2_size)) */
   can_baudrate_struct.baudrate_div = 12;
   can_baudrate_struct.rsaw_size = CAN_RSAW_3TQ;
-  can_baudrate_struct.bts1_size = CAN_BTS1_8TQ;
-  can_baudrate_struct.bts2_size = CAN_BTS2_3TQ;
+  can_baudrate_struct.bts1_size = CAN_BTS1_3TQ;
+  can_baudrate_struct.bts2_size = CAN_BTS2_8TQ;
   can_baudrate_set(CAN2, &can_baudrate_struct);
 
   /* can filter 0 config */
@@ -104,23 +104,12 @@ void CAN2_INIT(void)
   can_filter_init_struct.filter_fifo = CAN_FILTER_FIFO0;
   can_filter_init_struct.filter_number = 0;
   can_filter_init_struct.filter_bit = CAN_FILTER_32BIT;
-  can_filter_init_struct.filter_id_high = (((FILTER_EXT_ID1 << 3) >> 16) & 0xFFFF); /* extended identifier is 29 bit */
-  can_filter_init_struct.filter_id_low = ((FILTER_EXT_ID1 << 3) & 0xFFFF) | 0x04;
-  can_filter_init_struct.filter_mask_high = ((FILTER_EXT_ID2 << 3) >> 16) & 0xFFFF; /* extended identifier is 29 bit */
-  can_filter_init_struct.filter_mask_low = ((FILTER_EXT_ID2 << 3) & 0xFFFF) | 0x04;
-  can_filter_init(CAN2, &can_filter_init_struct);
-
-  /* can filter 1 config */
-  can_filter_init_struct.filter_activate_enable = TRUE;
-  can_filter_init_struct.filter_mode = CAN_FILTER_MODE_ID_LIST;
-  can_filter_init_struct.filter_fifo = CAN_FILTER_FIFO0;
-  can_filter_init_struct.filter_number = 1;
-  can_filter_init_struct.filter_bit = CAN_FILTER_32BIT;
-  can_filter_init_struct.filter_id_high = FILTER_STD_ID1 << 5; /* standard identifier is 11 bit */
+  can_filter_init_struct.filter_id_high =0; /* extended identifier is 29 bit */
   can_filter_init_struct.filter_id_low = 0;
-  can_filter_init_struct.filter_mask_high = FILTER_STD_ID2 << 5; /* standard identifier is 11 bit */
+  can_filter_init_struct.filter_mask_high = 0; /* extended identifier is 29 bit */
   can_filter_init_struct.filter_mask_low = 0;
   can_filter_init(CAN2, &can_filter_init_struct);
+
 
   /* can interrupt config */
   nvic_irq_enable(CAN2_SE_IRQn, 0x00, 0x00);

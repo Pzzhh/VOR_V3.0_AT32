@@ -5,7 +5,7 @@
 
 float acc_angle = 0;
 float soft_angle_CNT;
-//uint8_t isEnflag = 0;
+// uint8_t isEnflag = 0;
 Slave_Function_CB function_cb;
 void TMR1_BRK_TMR9_IRQHandler(void)
 {
@@ -59,6 +59,8 @@ uint8_t Slave1_Get_Machine_state()
 
 void Step_Phase_Set(u32 arr, u32 psc)
 {
+    uint32_t precav = TMR1->cval;
+    uint32_t prepr = TMR1->pr;
     if (arr == 0 && psc == 0)
     {
         TMR1->ctrl1_bit.tmren = 0;
@@ -66,6 +68,8 @@ void Step_Phase_Set(u32 arr, u32 psc)
     }
     Slave1_En_IO(1);
     tmr_base_init(TMR1, arr, psc);
+    TMR1->swevt_bit.ovfswtr = 1;
+    TMR1->cval = precav * arr / prepr;
     TMR1->c1dt = arr / 2;
     TMR1->ctrl1_bit.tmren = 1;
 }

@@ -513,6 +513,11 @@
               <FileType>1</FileType>
               <FilePath>.\HARDWARE\EROM\eriic.c</FilePath>
             </File>
+            <File>
+              <FileName>inc_motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HARDWARE\Motor\inc_motor.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -522,6 +527,11 @@
               <FileName>delay.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\HARDWARE\SYSTEM\delay\delay.c</FilePath>
+            </File>
+            <File>
+              <FileName>sys.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HARDWARE\SYSTEM\sys\sys.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -727,21 +737,6 @@
               <FileName>heap_4.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\middleLib\freertos\source\portable\memmang\heap_4.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>SYSTEM</GroupName>
-          <Files>
-            <File>
-              <FileName>delay.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\HARDWARE\SYSTEM\delay\delay.c</FilePath>
-            </File>
-            <File>
-              <FileName>sys.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\HARDWARE\SYSTEM\sys\sys.c</FilePath>
             </File>
           </Files>
         </Group>

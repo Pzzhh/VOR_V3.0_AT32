@@ -80,6 +80,7 @@ uint16_t channel1pulse = 0, channel2pulse = 0, channel3pulse = 0, channel4pulse 
 #include "lv_conf.h"
 #include "../INTERFACE/UI/other/system_function.h"
 #include "../other/meassage_center.h"
+#include "../HARDWARE/Motor/inc_motor.h"
 
 volatile int idex = 0;
 int *pt = (int *)0x20001000;
@@ -87,17 +88,16 @@ TaskHandle_t Thread_Lvgl;
 
 void TIM3_Int_Init(u16 arr, u16 psc)
 {
-  crm_periph_clock_enable(CRM_TMR3_PERIPH_CLOCK, TRUE);
+  crm_periph_clock_enable(CRM_TMR12_PERIPH_CLOCK, TRUE);
 
-  TMR3->div = psc;
-  TMR3->pr = arr; // interval 10ms
-  TMR3->cval = 1;
-  TMR3->ctrl1_bit.tmren = TRUE;
-  TMR3->iden_bit.ovfien = TRUE;
-  TMR3->ists = 0;
+  TMR12->div = psc;
+  TMR12->pr = arr; // interval 10ms
+  TMR12->cval = 1;
+  TMR12->ctrl1_bit.tmren = TRUE;
+  TMR12->iden_bit.ovfien = TRUE;
+  TMR12->ists = 0;
   // nvic_priority_group_config(NVIC_PRIORITY_GROUP_2);
-  nvic_irq_enable(TMR3_GLOBAL_IRQn, 0, 3);
-
+  nvic_irq_enable(TMR8_BRK_TMR12_IRQn, 0, 3);
 }
 
 extern void Task_Stroage_Init();
@@ -110,16 +110,18 @@ void LVGL_HANDLER()
   nvic_priority_group_config(NVIC_PRIORITY_GROUP_2);
   //    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
   /*hardware*/
-  //    ControlDelay(4000);
-  LCD_Init();
+  //  ControlDelay(4000);
+  // portENTER_CRITICAL();
+  // LCD_Init();
+  // portEXIT_CRITICAL();
   // atk_md0700_v3_init();
   FT5206_Init();
   GT9147_Init();
   LCD_Display_Dir(1);
-  lv_init();               // lvglç³»ç»Ÿåˆå?‹ï¿½?
-  lv_port_disp_init();     // lvglæ˜¾ç¤ºæ¥å£åˆå?‹ï¿½?,æ”¾åœ¨lv_init()çš„åï¿??
-  lv_port_indev_init();    // lvglè¾“å…¥æ¥å£åˆå?‹ï¿½?,æ”¾åœ¨lv_init()çš„åï¿??
-  TIM3_Int_Init(1999, 288-1); // å®šæ—¶å™¨åˆå§‹åŒ–(1msä¸?æ–?),ç”¨äºç»™lvglæä¾›1msçš„å¿ƒè·³èŠ‚ï¿??
+  lv_init();                    // lvglç³»ç»Ÿåˆå?‹ï¿½?
+  lv_port_disp_init();          // lvglæ˜¾ç¤ºæ¥å£åˆå?‹ï¿½?,æ”¾åœ¨lv_init()çš„åï¿??
+  lv_port_indev_init();         // lvglè¾“å…¥æ¥å£åˆå?‹ï¿½?,æ”¾åœ¨lv_init()çš„åï¿??
+  TIM3_Int_Init(1999, 288 - 1); // å®šæ—¶å™¨åˆå§‹åŒ–(1msä¸?æ–?),ç”¨äºç»™lvglæä¾›1msçš„å¿ƒè·³èŠ‚ï¿??
   /*system init */
   controlInit();
   uint8_t buf[20] = {0};
@@ -159,7 +161,9 @@ int main(void)
 {
   system_clock_config();
   delay_init();
+  motor_init();
   DFU_PowerUp_Detection();
+  LCD_Init();
   //    WWDG_Init(0x7F, 0x5F, WWDG_Prescaler_8); // ³õÊ¼»¯´°¿Ú¿´ÃÅ¹·£¬¾ÙÀı²ÎÊı
   TaskHandle_t handle;
   xTaskCreate((TaskFunction_t)LVGL_HANDLER,
@@ -173,13 +177,13 @@ int main(void)
 }
 
 // ¶¨Ê±Æ÷3ÖĞ¶Ï·şÎñ³ÌĞò
-void TMR3_GLOBAL_IRQHandler(void)
+void TMR8_BRK_TMR12_IRQHandler(void)
 {
-  if (TMR3->ists_bit.ovfif) // Òç³öÖĞ¶Ï
+  if (TMR12->ists_bit.ovfif) // Òç³öÖĞ¶Ï
   {
     lv_tick_inc(2); // lvglµÄ1msĞÄÌø
   }
-  TMR3->ists = 0;
+  TMR12->ists = 0;
 }
 
 /**

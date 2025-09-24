@@ -29,8 +29,8 @@
 
 // IO方向设置 (AT32: 使用GPIOF->cfgr配置模式位)
 // IO操作函数
-#define ER_IIC_SCL GPIOG->odt_bit.odt7   // SCL
-#define ER_IIC_SDA GPIOG->odt_bit.odt8   // SDA
+#define ER_IIC_SCL GPIOG->odt_bit.odt7  // SCL
+#define ER_IIC_SDA GPIOG->odt_bit.odt8  // SDA
 #define ER_READ_SDA GPIOG->idt_bit.idt8 // 输入SDA
 
 // IIC所有操作函数
@@ -42,5 +42,7 @@ u8 ER_IIC_Read_Byte(unsigned char ack); // IIC读取一个字节
 u8 ER_IIC_Wait_Ack(void);               // IIC等待ACK信号
 void ER_IIC_Ack(void);                  // IIC发送ACK信号
 void ER_IIC_NAck(void);                 // IIC不发送ACK信号
+uint8_t ER_IIC_Write_Bytes(uint8_t I2C_Addr, uint16_t addr, uint8_t *buf, uint8_t len);
+uint8_t ER_IIC_Read_Bytes(uint8_t I2C_Addr, uint16_t addr, uint8_t *buf, uint8_t len);
 
 #endif
