@@ -22,12 +22,10 @@
  ****************************************************************************************************
  */
 
-
 #include "rtc.h"
 // #include "./BSP/LED/led.h"
 // #include "./SYSTEM/usart/usart.h"
 // #include "./SYSTEM/delay/delay.h"
-
 
 /**
  * @brief       等待RSF同步
@@ -46,7 +44,7 @@ static uint8_t rtc_wait_synchro(void)
     // {
     //     retry--;    /* 等待影子寄存器同步 */
     // }
-    
+
     // if (retry == 0)return 1;/* 同步失败 */
 
     // RTC->WPR = 0xFF;        /* 使能RTC寄存器写保护 */
@@ -70,12 +68,12 @@ static uint8_t rtc_init_mode(void)
     // {
     //     retry--;    /* 等待进入RTC初始化模式成功 */
     // }
-   
+
     // if (retry == 0)
     // {
     //     return 1;   /* 同步失败 */
     // }
-    // else 
+    // else
     // {
     //     return 0;   /* 同步成功 */
     // }
@@ -96,7 +94,7 @@ void rtc_write_bkr(uint32_t bkrx, uint32_t data)
 
 /**
  * @brief       RTC读取后备区域SRAM
- * @param       bkrx : 后备区寄存器编号,范围:0~31 
+ * @param       bkrx : 后备区寄存器编号,范围:0~31
  * @retval      读取到的值
  */
 uint32_t rtc_read_bkr(uint32_t bkrx)
@@ -108,7 +106,7 @@ uint32_t rtc_read_bkr(uint32_t bkrx)
 
 /**
  * @brief       十进制转换为BCD码
- * @param       val : 要转换的十进制数 
+ * @param       val : 要转换的十进制数
  * @retval      BCD码
  */
 static uint8_t rtc_dec2bcd(uint8_t val)
@@ -126,7 +124,7 @@ static uint8_t rtc_dec2bcd(uint8_t val)
 
 /**
  * @brief       BCD码转换为十进制数据
- * @param       val : 要转换的BCD码 
+ * @param       val : 要转换的BCD码
  * @retval      十进制数据
  */
 static uint8_t rtc_bcd2dec(uint8_t val)
@@ -138,7 +136,7 @@ static uint8_t rtc_bcd2dec(uint8_t val)
 
 /**
  * @brief       RTC时间设置
- * @param       hour,min,sec: 小时,分钟,秒钟 
+ * @param       hour,min,sec: 小时,分钟,秒钟
  * @param       ampm        : AM/PM, 0=AM/24H; 1=PM/12H;
  * @retval      0,成功
  *              1,进入初始化模式失败
@@ -155,6 +153,7 @@ uint8_t rtc_set_time(uint8_t hour, uint8_t min, uint8_t sec, uint8_t ampm)
     // temp = (((uint32_t)ampm & 0X01) << 22) | ((uint32_t)rtc_dec2bcd(hour) << 16) | ((uint32_t)rtc_dec2bcd(min) << 8) | (rtc_dec2bcd(sec));
     // RTC->TR = temp;
     // RTC->ISR &= ~(1 << 7);  /* 退出RTC初始化模式 */
+    ertc_time_set(hour, min, sec, ampm);
     return 0;
 }
 
@@ -177,6 +176,7 @@ uint8_t rtc_set_date(uint8_t year, uint8_t month, uint8_t date, uint8_t week)
     // temp = (((uint32_t)week & 0X07) << 13) | ((uint32_t)rtc_dec2bcd(year) << 16) | ((uint32_t)rtc_dec2bcd(month) << 8) | (rtc_dec2bcd(date));
     // RTC->DR = temp;
     // RTC->ISR &= ~(1 << 7);  /* 退出RTC初始化模式 */
+    ertc_date_set(year, month, date, week);
     return 0;
 }
 
@@ -188,15 +188,12 @@ uint8_t rtc_set_date(uint8_t year, uint8_t month, uint8_t date, uint8_t week)
  */
 void rtc_get_time(uint8_t *hour, uint8_t *min, uint8_t *sec, uint8_t *ampm)
 {
-    // uint32_t temp = 0;
-
-    // while (rtc_wait_synchro()); /* 等待同步 */
-
-    // temp = RTC->TR;
-    // *hour = rtc_bcd2dec((temp >> 16) & 0X3F);
-    // *min = rtc_bcd2dec((temp >> 8) & 0X7F);
-    // *sec = rtc_bcd2dec(temp & 0X7F);
-    // *ampm = temp >> 22;
+    ertc_time_type time = {0};
+    ertc_calendar_get(&time);
+    *hour = time.hour;
+    *min = time.min;
+    *sec = time.sec;
+    *ampm = time.ampm;
 }
 
 /**
@@ -216,11 +213,73 @@ void rtc_get_date(uint8_t *year, uint8_t *month, uint8_t *date, uint8_t *week)
     // *month = rtc_bcd2dec((temp >> 8) & 0X1F);
     // *date = rtc_bcd2dec(temp & 0X3F);
     // *week = (temp >> 13) & 0X07;
+    ertc_time_type time = {0};
+    ertc_calendar_get(&time);
+    *year = time.year;
+    *month = time.month;
+    *date = time.day;
+    *week = time.week;
 }
 
+__IO uint16_t ertc_clk_div_a = 0;
+__IO uint16_t ertc_clk_div_b = 0;
+
+void ertc_config(void)
+{
+    /* enable the pwc clock interface */
+    crm_periph_clock_enable(CRM_PWC_PERIPH_CLOCK, TRUE);
+
+    /* allow access to ertc */
+    pwc_battery_powered_domain_access(TRUE);
+
+    /* reset ertc domain */
+    crm_battery_powered_domain_reset(TRUE);
+    crm_battery_powered_domain_reset(FALSE);
+
+    /* enable the lext osc */
+    crm_clock_source_enable(CRM_CLOCK_SOURCE_LEXT, TRUE);
+
+    /* wait till lext is ready */
+    while (crm_flag_get(CRM_LEXT_STABLE_FLAG) == RESET)
+    {
+    }
+
+    /* select the ertc clock source */
+    crm_ertc_clock_select(CRM_ERTC_CLOCK_LEXT);
+
+    /* ertc second(1hz) = ertc_clk / (ertc_clk_div_a + 1) * (ertc_clk_div_b + 1) */
+    ertc_clk_div_b = 255;
+    ertc_clk_div_a = 127;
+
+    /* enable the ertc clock */
+    crm_ertc_clock_enable(TRUE);
+
+    /* deinitializes the ertc registers */
+    ertc_reset();
+
+    /* wait for ertc registers update */
+    ertc_wait_update();
+
+    /* configure the ertc divider */
+    ertc_divider_set(ertc_clk_div_a, ertc_clk_div_b);
+
+    /* configure the ertc hour mode */
+    ertc_hour_mode_set(ERTC_HOUR_MODE_24);
+
+    /* set date: 2021-05-01 */
+    ertc_date_set(21, 5, 1, 5);
+
+    /* set time: 12:00:00 */
+    ertc_time_set(12, 0, 0, ERTC_AM);
+
+    ertc_flag_clear(ERTC_ALAF_FLAG);
+
+    /* indicator for the ertc configuration */
+    ertc_bpr_data_write(ERTC_DT1, 0x1234);
+}
 /**
  * @brief       RTC初始化
- *   @note 
+ *   @note
  *              默认尝试使用LSE,当LSE启动失败后,切换为LSI.
  *              通过BKP寄存器0的值,可以判断RTC使用的是LSE/LSI:
  *              当BKP0==0X5050时,使用的是LSE
@@ -233,110 +292,21 @@ void rtc_get_date(uint8_t *year, uint8_t *month, uint8_t *date, uint8_t *week)
  */
 uint8_t rtc_init(void)
 {
-    // uint16_t ssr;
-    // uint16_t bkpflag = 0;
-    // uint16_t retry = 200;
-    // uint32_t tempreg = 0;
+    crm_periph_clock_enable(CRM_PWC_PERIPH_CLOCK, TRUE);
+    /* allow access to ertc */
+    pwc_battery_powered_domain_access(TRUE);
+    if (ertc_bpr_data_read(ERTC_DT1) != 0x1234)
+    {
+        ertc_config();
+    }
+    ertc_wait_update();
 
-    // RCC->APB1ENR|=1<<28;        /* 使能电源接口时钟 */
-    // PWR->CR|=1<<8;              /* 后备区域访问使能(RTC+SRAM) */
-    // PWR->CSR|=PWR_CSR_BRE;
-    // bkpflag = rtc_read_bkr(0);  /* 读取BKP0的值 */
-
-    // if (bkpflag != 0X5050)      /* 之前使用的不是LSE */
-    // {
-    //     RCC->CSR |= 1 << 0;     /* LSI总是使能 */
-
-    //     while (!(RCC->CSR & 0x02)); /* 等待LSI就绪 */
-
-    //     RCC->BDCR |= 1 << 0;    /* 尝试开启LSE */
-
-    //     while (retry && ((RCC->BDCR & 0X02) == 0))  /* 等待LSE准备好 */
-    //     {
-    //         retry--;
-    //         delay_ms(5);
-    //     }
-
-    //     tempreg = RCC->BDCR;    /* 读取BDCR的值 */
-    //     tempreg &= ~(3 << 8);   /* 清零8/9位 */
-
-    //     if (retry == 0)tempreg |= 1 << 9;   /* LSE开启失败,启动LSI. */
-    //     else tempreg |= 1 << 8; /* 选择LSE,作为RTC时钟 */
-
-    //     tempreg |= 1 << 15;     /* 使能RTC时钟 */
-    //     RCC->BDCR = tempreg;    /* 重新设置BDCR寄存器 */
-    //     /* 关闭RTC寄存器写保护 */
-    //     RTC->WPR = 0xCA;
-    //     RTC->WPR = 0x53;
-    //     RTC->CR = 0;
-
-    //     if (rtc_init_mode())
-    //     {
-    //         RCC->BDCR = 1 << 16;/* 复位BDCR */
-    //         delay_ms(10);
-    //         RCC->BDCR = 0;      /*  结束复位 */
-    //         return 2;           /* 进入RTC初始化模式失败 */
-    //     }
-
-    //     RTC->PRER = 0XFF;       /* RTC同步分频系数(0~7FFF),必须先设置同步分频,再设置异步分频,Frtc=Fclks/((Sprec+1)*(Asprec+1)) */
-    //     RTC->PRER |= 0X7F << 16;/* RTC异步分频系数(1~0X7F) */
-    //     RTC->CR &= ~(1 << 6);   /* RTC设置为,24小时格式 */
-    //     RTC->ISR &= ~(1 << 7);  /* 退出RTC初始化模式 */
-    //     RTC->WPR = 0xFF;        /* 使能RTC寄存器写保护 */
-
-    //     if (bkpflag != 0X5051)  /* BKP0的内容既不是0X5050,也不是0X5051,说明是第一次配置,需要设置时间日期. */
-    //     {
-    //         rtc_set_time(23, 59, 56, 0);/* 设置时间 */
-    //         rtc_set_date(20, 1, 13, 7); /* 设置日期 */
-    //         //rtc_set_alarma(7,0,0,10); /* 设置闹钟时间 */
-    //     }
-
-    //     if (retry == 0)
-    //     {
-    //         rtc_write_bkr(0, 0X5051);   /* 标记已经初始化过了,使用LSI */
-    //     }
-    //     else 
-    //     {
-    //         rtc_write_bkr(0, 0X5050);   /* 标记已经初始化过了,使用LSE */
-    //     }
-    // }
-    // else
-    // {
-    //     retry = 10;     /* 连续10次SSR的值都没变化,则LSE死了. */
-    //     ssr = RTC->SSR; /* 读取初始值 */
-
-    //     while (retry)   /* 检测ssr寄存器的动态,来判断LSE是否正常 */
-    //     {
-    //         delay_ms(10);
-
-    //         if (ssr == RTC->SSR)        /* 对比 */
-    //         {
-    //             retry--;
-    //         }
-    //         else 
-    //         {
-    //             break;
-    //         }
-    //     }
-
-    //     if (retry == 0) /* LSE挂了,清除配置等待下次进入重新设置 */
-    //     {
-    //         rtc_write_bkr(0, 0XFFFF);   /* 标记错误的值 */
-    //         RCC->BDCR = 1 << 16;        /* 复位BDCR */
-    //         delay_ms(10);
-    //         RCC->BDCR = 0;              /* 结束复位 */
-    //     }
-    // }
-	// 	 RCC->APB1ENR |= RCC_APB1ENR_PWREN;
-    // PWR->CR = PWR_CR_DBP;
-    // RCC->AHB1ENR |= RCC_AHB1ENR_BKPSRAMEN;
-    //rtc_set_wakeup(4,0);  /* 配置WAKE UP中断,1秒钟中断一次 */
     return 0;
 }
 
 /**
  * @breif       设置闹钟时间(按星期闹铃,24小时制)
- * @param       week        : 星期几(1~7) 
+ * @param       week        : 星期几(1~7)
  * @param       hour,min,sec: 小时,分钟,秒钟
  * @retval      无
  */
@@ -421,7 +391,7 @@ void RTC_Alarm_IRQHandler(void)
  * @retval      无
  */
 void RTC_WKUP_IRQHandler(void)
-{ 
+{
     // if (RTC->ISR & (1 << 10))   /* WK_UP中断? */
     // {
     //     RTC->ISR &= ~(1 << 10); /* 清除中断标志 */
@@ -447,29 +417,21 @@ uint8_t rtc_get_week(uint16_t year, uint8_t month, uint8_t day)
     yearL = year % 100;
 
     /*  如果为21世纪,年份数加100 */
-    if (yearH > 19)yearL += 100;
+    if (yearH > 19)
+        yearL += 100;
 
     /*  所过闰年数只算1900年之后的 */
     temp2 = yearL + yearL / 4;
     temp2 = temp2 % 7;
     temp2 = temp2 + day + table_week[month - 1];
 
-    if (yearL % 4 == 0 && month < 3)temp2--;
+    if (yearL % 4 == 0 && month < 3)
+        temp2--;
 
     temp2 %= 7;
 
-    if (temp2 == 0)temp2 = 7;
+    if (temp2 == 0)
+        temp2 = 7;
 
     return temp2;
 }
-
-
-
-
-
-
-
-
-
-
-

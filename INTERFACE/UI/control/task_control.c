@@ -252,7 +252,7 @@ BEGIN_POS:
 	uint16_t task_size = e->taskCount;
 	Ctrl_Msg_Printf(" ");
 	HAL_Outage_Log(1,0);
-	ZEROControlFunction(1);
+//	ZEROControlFunction(1);
 	int i = 0;
 	if(e->StartWithIndex < task_size)
 		i = e->StartWithIndex;

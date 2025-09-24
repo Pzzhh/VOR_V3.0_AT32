@@ -92,12 +92,12 @@ void RequestReset(void)
 
 void DFU_PowerUp_Detection()
 {
-	if (dfuFlag == 0xAA) // 判断上次复位是否为软件复位
-	{
-		dfuFlag = 0;
-		// RCC->CSR = 0;	  // 清除标志位
-		JumpBootLoader(); // 进入bootloader
-	}
-	// RCC->CSR = RCC_CSR_RMVF;
-	dfuFlag = 0;
+//	if (dfuFlag == 0xAA) // 判断上次复位是否为软件复位
+//	{
+//		dfuFlag = 0;
+//		// RCC->CSR = 0;	  // 清除标志位
+//		JumpBootLoader(); // 进入bootloader
+//	}
+//	// RCC->CSR = RCC_CSR_RMVF;
+//	dfuFlag = 0;
 }

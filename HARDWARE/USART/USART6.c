@@ -40,7 +40,7 @@ void USART6_INIT(
     gpio_init(GPIOG, &gpio_init_struct);
     gpio_pin_mux_config(GPIOG, GPIO_PINS_SOURCE14, GPIO_MUX_8);
 
-    //nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
+    // nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
     nvic_irq_enable(USART6_IRQn, 0, 0);
 
     /* configure USART6 param */
@@ -51,9 +51,10 @@ void USART6_INIT(
     usart_enable(USART6, TRUE);
 
     usart_interrupt_enable(USART6, USART_RDBF_INT, TRUE);
-   
+
     isinit = 1;
     isinit = 1;
+    Interrupt_handle = handle;
 }
 static char printf_buf[100];
 static uint16_t send_index, send_len;

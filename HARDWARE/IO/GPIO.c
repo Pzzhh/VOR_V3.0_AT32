@@ -21,7 +21,7 @@ static void Timer_init(int ms)
 {
   crm_periph_clock_enable(CRM_TMR10_PERIPH_CLOCK, TRUE);
 
-  TMR10->div = 14400;
+  TMR10->div = 28800;
   TMR10->pr = ms * 10; // interval 10ms
   TMR10->cval = 1;
   TMR10->ctrl1_bit.tmren = TRUE;

@@ -49,6 +49,7 @@ void USART5_INIT(
     usart_enable(UART5, TRUE);
 
     usart_interrupt_enable(UART5, USART_RDBF_INT, TRUE);
+     Interrupt_handle = handle;
 }
 
 void UART5_IRQHandler(void) // 串口5中断服务程序

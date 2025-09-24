@@ -47,6 +47,7 @@ void USART1_INIT(
     usart_enable(USART1, TRUE);
 
     usart_interrupt_enable(USART1, USART_RDBF_INT, TRUE);
+    Interrupt_handle = handle;
 }
 static char printf_buf[100];
 static uint16_t send_index, send_len;

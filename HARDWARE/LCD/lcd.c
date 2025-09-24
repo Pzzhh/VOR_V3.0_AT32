@@ -88,7 +88,7 @@ _lcd_dev lcddev;
 #define XMC_A6_SET                \
 	{                             \
 		__DSB();                  \
-		delay_us(0);              \
+		delay_us(1);              \
 		GPIOH->scr = GPIO_PINS_3; \
 		__DSB();                  \
 	}
@@ -96,7 +96,7 @@ _lcd_dev lcddev;
 #define XMC_A6_CLR                      \
 	{                                   \
 		__DSB();                        \
-		delay_us(0);                    \
+		delay_us(1);                    \
 		GPIOH->scr = GPIO_PINS_3 << 16; \
 		__DSB();                        \
 	}
