@@ -113,7 +113,12 @@ void SysTick_Handler(void)
 // SYSCLK:系统时钟频率
 void delay_init(u8 SYSCLK)
 {
+
 	CRM->apb1en_bit.adc14en = 1;
+	TMR14->ctrl1_bit.ocmen = 1;
+//	CRM->ahben1_bit.gpioden = 1;
+//	GPIOD->cfgr_bit.iomc3 = 1;
+//	delay_us(10);
 }
 
 #if SYSTEM_SUPPORT_OS // 如果需要支持OS.
@@ -178,25 +183,15 @@ void delay_us(u32 nus)
 	// }
 	// return;
 	// uint32_t temp = 1 | TIM_CR1_OPM;
+//	GPIOD->odt_bit.odt3 = 1;
+	TMR14->ctrl1_bit.tmren = 0;
 	if (nus > 1000)
 		nus = 5000;
-	if(nus==0)
-	{
-				TMR14->ctrl1 = 0;
-		TMR14->div = (168 / 2) - 1;
-		TMR14->pr = 5;
-		TMR14->cval = 0;
-		__DSB();
-		TMR14->ists = 0;
-		TMR14->ctrl1_bit.tmren = 1;
-		while (TMR14->ists_bit.ovfif == 0)
-		{
-		}
-	}else
+	if (nus == 0)
 	{
 		TMR14->ctrl1 = 0;
-		TMR14->div = (168 / 2) - 1;
-		TMR14->pr = (nus * 10) - 1;
+		TMR14->div = (288) - 1;
+		TMR14->pr = 10;
 		TMR14->cval = 0;
 		__DSB();
 		TMR14->ists = 0;
@@ -205,7 +200,20 @@ void delay_us(u32 nus)
 		{
 		}
 	}
-	
+	else
+	{
+		TMR14->ctrl1 = 0;
+		TMR14->div = (288) - 1;
+		TMR14->pr = (nus);
+		TMR14->cval = 0;
+		__DSB();
+		TMR14->ists = 0;
+		TMR14->ctrl1_bit.tmren = 1;
+		while (TMR14->ists_bit.ovfif == 0)
+		{
+		}
+	}
+//	GPIOD->odt_bit.odt3 = 0;
 	return;
 }
 // 延时nms
@@ -232,18 +240,12 @@ int xx = 0;
 // nms:0~65535
 void delay_ms(u16 nms)
 {
-	if (nms > 5000)
-		nms = 5000;
-	TMR14->ctrl1 = 0;
-	TMR14->div = (16800 / 2) - 1;
-	TMR14->pr = (nms * 10) - 1;
-	TMR14->cval = 0;
-	__DSB();
-	TMR14->ists = 0;
-	TMR14->ctrl1_bit.tmren = 1;
-	while (TMR14->ists_bit.ovfif == 0)
+	int i=0;
+	for ( i = 0; i < nms; i++)
 	{
+		delay_us(1000);
 	}
+	
 	return;
 }
 
@@ -259,8 +261,8 @@ void jump_to_bootloader(void)
 	void (*bootloader_entry)(void) = (void (*)(void))(*((uint32_t *)(bootloader_address + 4)));
 
 	// 设置主堆栈指针
-	CRM->ahbrst2_bit.otgfs1rst=1;
-	CRM->ahbrst2_bit.otgfs1rst=0;
+	CRM->ahbrst2_bit.otgfs1rst = 1;
+	CRM->ahbrst2_bit.otgfs1rst = 0;
 
 	__set_MSP(*((uint32_t *)bootloader_address));
 

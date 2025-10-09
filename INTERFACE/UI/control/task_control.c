@@ -219,7 +219,7 @@ void Task_control_handler(Task_control_info* e)
 	e->State_Bit.isRun = 0;
 	e->State_Bit.WaitRk = 0;
 	Ctrl_Msg_Printf(" ");
-	//ZEROControlFunction(1);
+//	ZEROControlFunction(1);
 	HAL_Beep_Enable(500);
 	// uint16_t len = 0;
 BEGIN_POS:

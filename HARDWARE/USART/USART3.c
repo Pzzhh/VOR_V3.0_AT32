@@ -36,7 +36,7 @@ void USART3_INIT(
     gpio_pin_mux_config(GPIOC, GPIO_PINS_SOURCE11, GPIO_MUX_7);
     gpio_pin_mux_config(GPIOC, GPIO_PINS_SOURCE10, GPIO_MUX_7);
 
-    //nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
+    // nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
     nvic_irq_enable(USART3_IRQn, 0, 0);
 
     /* configure USART3 param */
@@ -47,7 +47,7 @@ void USART3_INIT(
     usart_enable(USART3, TRUE);
 
     usart_interrupt_enable(USART3, USART_RDBF_INT, TRUE);
-
+    Interrupt_handle = handle;
 }
 static char printf_buf[100];
 static uint16_t send_index, send_len;
@@ -99,7 +99,7 @@ void USART3_IRQHandler(void) // 串口3中断服务程序
     {
         uint8_t dr;
         if (USART3_FIFO_Send(&dr))
-				{
+        {
             usart_data_transmit(USART3, dr);
         }
         else

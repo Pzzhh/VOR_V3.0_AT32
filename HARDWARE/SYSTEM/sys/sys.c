@@ -66,7 +66,7 @@ __asm int readsps(void){
 				bx lr}
 
 // uint8_t ucHeap[ configTOTAL_HEAP_SIZE ]__attribute__((at(0x10000000)));
-uint8_t dfuFlag __attribute__((at(0x2001FF00)));
+uint8_t dfuFlag __attribute__((at(0x2005FFF0)));
 typedef void (*bootapp)(void); // 定义一个函数类型的参数.
 void JumpBootLoader()
 {

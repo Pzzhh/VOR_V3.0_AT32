@@ -85,10 +85,13 @@ u16 BACK_COLOR = 0xFFFF;  // 背景色
 // 默认为竖屏
 _lcd_dev lcddev;
 
+//#define XMC_A6_SET
+//#define XMC_A6_CLR 
+
 #define XMC_A6_SET                \
 	{                             \
 		__DSB();                  \
-		delay_us(0);              \
+		delay_us(1);              \
 		GPIOH->scr = GPIO_PINS_3; \
 		__DSB();                  \
 	}
@@ -96,7 +99,7 @@ _lcd_dev lcddev;
 #define XMC_A6_CLR                      \
 	{                                   \
 		__DSB();                        \
-		delay_us(0);                    \
+		delay_us(1);                    \
 		GPIOH->scr = GPIO_PINS_3 << 16; \
 		__DSB();                        \
 	}
@@ -802,7 +805,7 @@ void xmc_init(void)
 	crm_periph_clock_enable(CRM_GPIOE_PERIPH_CLOCK, TRUE);
 	crm_periph_clock_enable(CRM_GPIOH_PERIPH_CLOCK, TRUE);
 	crm_periph_clock_enable(CRM_GPIOG_PERIPH_CLOCK, TRUE);
-	//  crm_periph_clock_enable(CRM_GPIOF_PERIPH_CLOCK, TRUE);
+	crm_periph_clock_enable(CRM_GPIOF_PERIPH_CLOCK, TRUE);
 
 	/* enable the xmc clock */
 	crm_periph_clock_enable(CRM_XMC_PERIPH_CLOCK, TRUE);
@@ -828,6 +831,7 @@ void xmc_init(void)
 	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE13, GPIO_MUX_12);
 	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE14, GPIO_MUX_12);
 	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE15, GPIO_MUX_12);
+  gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE12, GPIO_MUX_12);
 
 	/* lcd data lines configuration */
 	gpio_init_struct.gpio_pins = GPIO_PINS_12;
@@ -836,6 +840,13 @@ void xmc_init(void)
 	gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
 	gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
 	gpio_init(GPIOG, &gpio_init_struct);
+  
+  	gpio_init_struct.gpio_pins = GPIO_PINS_12;
+	gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
+	gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+	gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
+	gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+	gpio_init(GPIOF, &gpio_init_struct);
 
 	gpio_init_struct.gpio_pins = GPIO_PINS_3;
 	gpio_init_struct.gpio_mode = GPIO_MODE_OUTPUT;
@@ -983,9 +994,9 @@ void LCD_Init(void)
 		xmc_norsram_timing_default_para_init(&rw_t, &w_t);
 		rw_t.subbank = XMC_BANK1_NOR_SRAM4;
 		rw_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
-		rw_t.addr_setup_time = 0x2; // 保持与xmc_init一致
+		rw_t.addr_setup_time = 0x20; // 保持与xmc_init一致
 		rw_t.addr_hold_time = 0x0;
-		rw_t.data_setup_time = 0x2; // 保持与xmc_init一致
+		rw_t.data_setup_time = 0x20; // 保持与xmc_init一致
 		rw_t.bus_latency_time = 0x0;
 		rw_t.clk_psc = 0x0;
 		rw_t.data_latency_time = 0x0;
@@ -993,9 +1004,9 @@ void LCD_Init(void)
 
 		w_t.subbank = XMC_BANK1_NOR_SRAM4;
 		w_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
-		w_t.addr_setup_time = 0x3; // 3个HCLK
+		w_t.addr_setup_time = 0x30; // 3个HCLK
 		w_t.addr_hold_time = 0x0;
-		w_t.data_setup_time = 0x2; // 2个HCLK
+		w_t.data_setup_time = 0x20; // 2个HCLK
 		w_t.bus_latency_time = 0x0;
 		w_t.clk_psc = 0x0;
 		w_t.data_latency_time = 0x0;

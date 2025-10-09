@@ -5,6 +5,7 @@
 
 float acc_angle = 0;
 float soft_angle_CNT;
+// uint8_t isEnflag = 0;
 Slave_Function_CB function_cb;
 void TMR1_BRK_TMR9_IRQHandler(void)
 {
@@ -58,6 +59,8 @@ uint8_t Slave1_Get_Machine_state()
 
 void Step_Phase_Set(u32 arr, u32 psc)
 {
+    uint32_t precav = TMR1->cval;
+    uint32_t prepr = TMR1->pr;
     if (arr == 0 && psc == 0)
     {
         TMR1->ctrl1_bit.tmren = 0;
@@ -65,6 +68,8 @@ void Step_Phase_Set(u32 arr, u32 psc)
     }
     Slave1_En_IO(1);
     tmr_base_init(TMR1, arr, psc);
+    TMR1->swevt_bit.ovfswtr = 1;
+    TMR1->cval = precav * arr / prepr;
     TMR1->c1dt = arr / 2;
     TMR1->ctrl1_bit.tmren = 1;
 }
@@ -110,7 +115,7 @@ void Slave_server_Init(void)
 
     tmr_cnt_dir_set(TMR9, TMR_COUNT_UP);
     tmr_clock_source_div_set(TMR9, TMR_CLOCK_DIV1);
-    tmr_base_init(TMR9, 499, 335); // 初始化TMR9
+    tmr_base_init(TMR9, 999, 287); // 初始化TMR9
 
     tmr_interrupt_enable(TMR9, TMR_OVF_INT, TRUE);
 
@@ -126,7 +131,6 @@ void Slave1_Step_Generator_Init(uint32_t arr, uint32_t psc)
 
     GPIOA->cfgr_bit.iomc8 = 2;
 
-  
     GPIOA->muxh_bit.muxh8 = 1; // PA8
     // Set the prescaler value to have TMR1 counter clock = 1 MHz
     TMR1->div = 84 - 1; // APB2 clock is 84 MHz
@@ -147,7 +151,7 @@ void Slave1_Step_Generator_Init(uint32_t arr, uint32_t psc)
     TMR1->cctrl_bit.c1en = 1;
 
     // Enable auto-reload preload
-    TMR1->ctrl1_bit.prben = 1;
+    // TMR1->ctrl1_bit.prben = 1;
 
     // Enable the TMR1 main output
     TMR1->brk_bit.oen = 1;
@@ -165,7 +169,7 @@ void tim_f_set(int f)
     tmr_type *TIMx = TMR1;
     u8 Mins_flag;
     int time_arr, time_psc;
-    int a, clk = 84000000, c, y, r = 0, t, i;
+    int a, clk = 144000000, c, y, r = 0, t, i;
     if (f == 0)
     {
         tmr_counter_enable(TMR1, FALSE);
@@ -224,7 +228,7 @@ void tim_f_sin_set(int f)
     }
     u8 Mins_flag;
     int time_arr, time_psc;
-    int a, clk = 84000000, c, y, r = 0, t, i;
+    int a, clk = 144000000, c, y, r = 0, t, i;
     if (f == 0)
     {
         Step_Phase_Set(0, 0);
@@ -274,7 +278,7 @@ void tim_f_sin_set_Dir(int f)
     tmr_type *TIMx = TMR1;
     u8 Mins_flag;
     int time_arr, time_psc;
-    int a, clk = 84000000, c, y, r = 0, t, i;
+    int a, clk = 288000000, c, y, r = 0, t, i;
     if (f == 0)
     {
         Step_Phase_Set(0, 0);
@@ -352,7 +356,7 @@ uint8_t Slave1_Check_Encode_Angle()
 {
     static uint8_t flag = 0;
     int32_t count = *(int32_t *)&(TMR2->cval);
-    
+
     if (flag == 0)
     {
         count_record = count;
@@ -374,7 +378,7 @@ uint8_t Slave1_Check_Encode_Angle()
 
 float Slave1_Get_Encode_Angle()
 {
-//    if (isEncode_error)
+    //    if (isEncode_error)
     {
         return soft_angle_CNT;
     }
@@ -400,9 +404,9 @@ uint8_t Slave1_get_Encode_error()
 
 void Slave1_Set_Encode_Angle(float angle)
 {
-        soft_angle_CNT = angle;
+    soft_angle_CNT = angle;
     angle = angle + 180;
-    
+
     int32_t *count = (int32_t *)&(TMR2->cval);
     *count = (angle / 360) * 1073741.0f;
 }

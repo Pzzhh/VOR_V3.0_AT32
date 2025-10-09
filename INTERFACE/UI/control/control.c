@@ -145,7 +145,7 @@ uint8_t Ctrl_Resume_Config()
 		control_info.Rk3588_Flag.isUsingBlock = 1;
 	else
 		control_info.Rk3588_Flag.isUsingBlock = 0;
-	// control_info.Dev_Mode_Bit.C610 = 0;
+	control_info.Dev_Mode_Bit.C610 = 1;
 	// // control_info.Dev_Mode_Bit.Inc_DIR = 0;
 	// control_info.Dev_Mode_Bit.UARTMODE = 0;
 	// inc_dir_g = 1;

@@ -14,6 +14,8 @@
 #include "../HARDWARE/SLAVE/Slave1_Timer.h"
 #include "../HARDWARE/INC/INC_CTRl.h"
 extern void Rk3588_Printf(const char *strOutputString, ...);
+extern __IO uint16_t adc1_ordinary_valuetab[2]; //获取两个电机的ADC值
+
 typedef struct
 {
     enum
@@ -45,21 +47,10 @@ uint8_t Inc_ctrl(void)
     static float angle = 0;
     angle = JY60_Get_IncAsync();
     uint8_t exit_flag = 0;
-    // if (JY60_Get_IncAsync(&angle) == 0)
-    // {
-    //     //        Angle_nonreqTime++;
-    //     //        if (Angle_nonreqTime == 255)
-    //     //        {
-    //     //            inc_para.state = error;
-    //     //            return 1;
-    //     //        }
-    // }
-    // else
-    //     Angle_nonreqTime = 0;
+  
     if (inc_para.state == running)
     {
-        int16_t bias = ((inc_para.angleReq - angle) * 10.0f);
-        //   Rk3588_Printf("\r\n bias %d",bias);
+        int16_t bias = ((inc_para.angleReq - angle) * 10.0f); 
         int error = last_angle - bias;
         if (error == 0)
         {
@@ -70,26 +61,35 @@ uint8_t Inc_ctrl(void)
         if (angle_nomovecounter > angle_nomovecounterMax)
         {
             exit_flag = 1;
-            // inc_para.state = end;
         }
         last_angle = bias;
-        //				if(angle_nomovetime
         Angle_nonreqTime = bias;
-        if (bias > 0)
+        
+        
+        //over current
+        if (overCurrent())  //过流
         {
-
+            INC_IO_Set(0); // 继电器停止
+            Motor_Ctl_Set(0, 0);
+            exit_flag = 1; // 退出
+        }
+        if (bias > 0) 
+        {
+          Motor_Ctl_Set(1000, 1000);
             INC_IO_Set((inc_para.inc_dir)
                            ? 2
                            : 1);
         }
         else if (bias < 0)
         {
+          Motor_Ctl_Set(-1000, -1000);
             INC_IO_Set((inc_para.inc_dir)
                            ? 1
                            : 2);
         }
         else
         {
+          Motor_Ctl_Set(0, 0);
             INC_IO_Set(0);
             if (inc_para.angleReq < 0.5)
             {
@@ -97,6 +97,7 @@ uint8_t Inc_ctrl(void)
             }
             else
             {
+                
                 exit_flag = 1;
                 // inc_para.state = end;
             }
@@ -104,6 +105,13 @@ uint8_t Inc_ctrl(void)
     }
     if (inc_para.state == retract)
     {
+//      //over current
+//        //if (voltage1 >= max_voltage || voltage2 >= max_voltage)
+//        if (current1 >= max_current || current2 >= max_current)
+//        {
+//            INC_IO_Set(0); // 停止电机
+//            exit_flag = 1; // 直接退出
+//        }
         inc_para.Tick++;
         INC_IO_Set(2);
         if (inc_para.Tick > 3000)
@@ -125,8 +133,15 @@ uint8_t Inc_ctrl(void)
                                                                                      : 0;
 			}
         inc_para.Tick++;
+      if(io_cmd==1)
+      {
+         Motor_Ctl_Set(1000, 1000);
+      }else
+      {
+          Motor_Ctl_Set(-1000, -1000);
+      }
         INC_IO_Set(io_cmd);
-        if (inc_para.Tick > 2000||io_cmd!=inc_para.manual_Dir_last)
+        if (inc_para.Tick > 1000||io_cmd!=inc_para.manual_Dir_last)
         {
 					inc_para.manual_Dir_last=io_cmd;
             exit_flag = 1;
@@ -147,6 +162,7 @@ uint8_t INC_handler(void)
     if (res)
     {
         INC_IO_Set(0);
+                  Motor_Ctl_Set(0, 0);
         inc_para.state = end;
         return 1; // end turn off tim4
     }

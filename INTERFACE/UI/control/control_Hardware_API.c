@@ -518,20 +518,21 @@ int HAL_TaskStroage_Read(uint8_t id, Task_Parameter_Struct* e)
 	// crc check
 	return res;
 #else
-	volatile const uint8_t* p = (volatile const uint8_t*)0x40024500 + id * 12 * sizeof(Task_Parameter_Struct);
-	uint16_t storedCRC = (uint16_t)(p[0] | (p[1] << 8));
-	uint16_t totalLen = (uint16_t)(p[2] | (p[3] << 8));
-	uint16_t structSize = (uint16_t)(p[4] | (p[5] << 8));
-	const uint8_t* data = (const uint8_t*)(p + 6);
-	if (totalLen > StroageMaxLength)
-		return 0;
-	uint16_t calc = crc16_modbus(data, totalLen);
-	if (calc != storedCRC) return 0;
-	if (structSize != sizeof(Task_Parameter_Struct)) return 0;
-	if ((totalLen % structSize) != 0) return 0;
+	// volatile const uint8_t* p = (volatile const uint8_t*)0x40024500 + id * 12 * sizeof(Task_Parameter_Struct);
+	// uint16_t storedCRC = (uint16_t)(p[0] | (p[1] << 8));
+	// uint16_t totalLen = (uint16_t)(p[2] | (p[3] << 8));
+	// uint16_t structSize = (uint16_t)(p[4] | (p[5] << 8));
+	// const uint8_t* data = (const uint8_t*)(p + 6);
+	// if (totalLen > StroageMaxLength)
+	// 	return 0;
+	// uint16_t calc = crc16_modbus(data, totalLen);
+	// if (calc != storedCRC) return 0;
+	// if (structSize != sizeof(Task_Parameter_Struct)) return 0;
+	// if ((totalLen % structSize) != 0) return 0;
 
-	memcpy(e, data, totalLen);
-	return (int)(totalLen / structSize);
+	// memcpy(e, data, totalLen);
+	// return (int)(totalLen / structSize);
+	return 0;
 #endif
 }
 
@@ -575,28 +576,29 @@ int HAL_TaskStroage_Write(uint8_t id, Task_Parameter_Struct* e, uint8_t count)
 #define TASK_BKP_MAX_DATA    (480U)          /* 与 PC 端保持一致，可按需调整 */
 #define TASK_BKP_HEADER_SIZE (6U)            /* CRC(2)+TotalLen(2)+StructSize(2) */
 #define TASK_BKP_MAGIC       (0xA55A)  
-	uint32_t totalLen = (uint32_t)count * sizeof(Task_Parameter_Struct);
-	if (totalLen == 0 || totalLen > TASK_BKP_MAX_DATA) return 0;
-	if (TASK_BKP_HEADER_SIZE + totalLen > TASK_BKPSRAM_SIZE) return 0;
+	// uint32_t totalLen = (uint32_t)count * sizeof(Task_Parameter_Struct);
+	// if (totalLen == 0 || totalLen > TASK_BKP_MAX_DATA) return 0;
+	// if (TASK_BKP_HEADER_SIZE + totalLen > TASK_BKPSRAM_SIZE) return 0;
 
-	uint16_t crc = crc16_modbus((const uint8_t*)e, totalLen);
+	// uint16_t crc = crc16_modbus((const uint8_t*)e, totalLen);
 
-	uint8_t* p = (uint8_t*)0x40024500 + id * 12 * sizeof(Task_Parameter_Struct);
+	// uint8_t* p = (uint8_t*)0x40024500 + id * 12 * sizeof(Task_Parameter_Struct);
 
-	/* 直接写入 (Backup SRAM 可像普通 SRAM 一样写) */
-	p[0] = (uint8_t)(crc & 0xFF);
-	p[1] = (uint8_t)(crc >> 8);
-	p[2] = (uint8_t)(totalLen & 0xFF);
-	p[3] = (uint8_t)(totalLen >> 8);
-	uint16_t structSize = (uint16_t)sizeof(Task_Parameter_Struct);
-	p[4] = (uint8_t)(structSize & 0xFF);
-	p[5] = (uint8_t)(structSize >> 8);
+	// /* 直接写入 (Backup SRAM 可像普通 SRAM 一样写) */
+	// p[0] = (uint8_t)(crc & 0xFF);
+	// p[1] = (uint8_t)(crc >> 8);
+	// p[2] = (uint8_t)(totalLen & 0xFF);
+	// p[3] = (uint8_t)(totalLen >> 8);
+	// uint16_t structSize = (uint16_t)sizeof(Task_Parameter_Struct);
+	// p[4] = (uint8_t)(structSize & 0xFF);
+	// p[5] = (uint8_t)(structSize >> 8);
 
-	memcpy(&p[TASK_BKP_HEADER_SIZE], e, totalLen);
+	// memcpy(&p[TASK_BKP_HEADER_SIZE], e, totalLen);
 
-	/* 可选：再校验一次写入正确 */
-	uint16_t verify = crc16_modbus(&p[TASK_BKP_HEADER_SIZE], (uint16_t)totalLen);
-	return (verify == crc) ? 1 : 0;
+	// /* 可选：再校验一次写入正确 */
+	// uint16_t verify = crc16_modbus(&p[TASK_BKP_HEADER_SIZE], (uint16_t)totalLen);
+	// return (verify == crc) ? 1 : 0;
+	return 0;
 #endif
 }
 

@@ -21,7 +21,7 @@ static void Timer_init(int ms)
 {
   crm_periph_clock_enable(CRM_TMR10_PERIPH_CLOCK, TRUE);
 
-  TMR10->div = 14400;
+  TMR10->div = 28800;
   TMR10->pr = ms * 10; // interval 10ms
   TMR10->cval = 1;
   TMR10->ctrl1_bit.tmren = TRUE;
@@ -39,6 +39,7 @@ void CAM_GPIO_INIT()
   crm_periph_clock_enable(CRM_GPIOG_PERIPH_CLOCK, TRUE);
   crm_periph_clock_enable(CRM_GPIOF_PERIPH_CLOCK, TRUE);
   crm_periph_clock_enable(CRM_GPIOD_PERIPH_CLOCK, TRUE);
+  crm_periph_clock_enable(CRM_GPIOC_PERIPH_CLOCK, TRUE);
 
   gpio_init_struct.gpio_mode = GPIO_MODE_OUTPUT;
   gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
@@ -54,13 +55,18 @@ void CAM_GPIO_INIT()
   gpio_init_struct.gpio_pins = GPIO_PINS_15;
   gpio_init(GPIOF, &gpio_init_struct); // SYNC LED
 
-  gpio_init_struct.gpio_pins = GPIO_PINS_3;
-  gpio_init(GPIOD, &gpio_init_struct);  // BEEP
+//  gpio_init_struct.gpio_pins = GPIO_PINS_3;
+//  gpio_init(GPIOD, &gpio_init_struct);  // BEEP
+
+  gpio_init_struct.gpio_pins = GPIO_PINS_8;
+  gpio_init_struct.gpio_pull = GPIO_PULL_DOWN; //ÏÂÀ­¿ªÆôESP32
+  gpio_init(GPIOC, &gpio_init_struct);
 
   gpio_bits_reset(GPIOG, GPIO_PINS_0);  // REC
   gpio_bits_reset(GPIOG, GPIO_PINS_1);  // WIFI
   gpio_bits_reset(GPIOF, GPIO_PINS_15); // SYNC LED
-  gpio_bits_set(GPIOD, GPIO_PINS_3);   // BEEP
+  //gpio_bits_set(GPIOD, GPIO_PINS_3);   // BEEP
+  gpio_bits_set(GPIOC, GPIO_PINS_8);   // ESP32
   Timer_init(1500);
 }
 
@@ -69,25 +75,25 @@ static unsigned int ReqSec = 0, BeepReqSec = 0;
 void TMR1_OVF_TMR10_IRQHandler()
 {
   TMR10->ists = 0;
-  if (sec == 0)
-  {
-    ReqSec = 1;
-    BeepReqSec = 1;
-  }
-  if (ReqSec != 0 && sec >= ReqSec)
-  {
-    gpio_bits_reset(GPIOG, GPIO_PINS_0);
-    gpio_bits_reset(GPIOF, GPIO_PINS_15);
-    ReqSec = 0;
-    //				gpio_bits_reset(GPIOG, GPIO_PINS_1);
-  }
-  if (BeepReqSec != 0 && sec >= BeepReqSec)
-  {
-    gpio_bits_set(GPIOD, GPIO_PINS_3);
-    BeepReqSec = 0;
-    //				gpio_bits_reset(GPIOG, GPIO_PINS_1);
-  }
-  sec++;
+//  if (sec == 0)
+//  {
+//    ReqSec = 1;
+//    BeepReqSec = 1;
+//  }
+//  if (ReqSec != 0 && sec >= ReqSec)
+//  {
+//    gpio_bits_reset(GPIOG, GPIO_PINS_0);
+//    gpio_bits_reset(GPIOF, GPIO_PINS_15);
+//    ReqSec = 0;
+//    //				gpio_bits_reset(GPIOG, GPIO_PINS_1);
+//  }
+//  if (BeepReqSec != 0 && sec >= BeepReqSec)
+//  {
+//    gpio_bits_set(GPIOD, GPIO_PINS_3);
+//    BeepReqSec = 0;
+//    //				gpio_bits_reset(GPIOG, GPIO_PINS_1);
+//  }
+//  sec++;
 }
 
 void GPIO_CAM_REC_IO_Ctrl(int flag)
@@ -114,10 +120,10 @@ void GPIO_CAM_Wifi_IO_Ctrl()
 
 void GPIO_Beep_IO_Ctrl(uint32_t ms)
 {
-  if (ms > 10 * 1000)
-    ms = 10 * 1000;
-  ms /= 10;
-  gpio_bits_reset(GPIOD, GPIO_PINS_3);
-  // sec=0;
-  BeepReqSec = sec + ms;
+//  if (ms > 10 * 1000)
+//    ms = 10 * 1000;
+//  ms /= 10;
+//  gpio_bits_reset(GPIOD, GPIO_PINS_3);
+//  // sec=0;
+//  BeepReqSec = sec + ms;
 }
