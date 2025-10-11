@@ -1,4 +1,12 @@
-﻿#include "UI_KeyBorad.h"
+﻿/*
+ * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @Date: 2025-09-11 15:50:16
+ * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @LastEditTime: 2025-10-11 11:08:27
+ * @FilePath: \VOR_V3.0_AT32\INTERFACE\UI\UI_Component\UI_KeyBorad.c
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+#include "UI_KeyBorad.h"
 #include "../UI_Include.h"
 
 typedef struct
@@ -30,7 +38,7 @@ static const char* kb_map_num_char[] = {
 	"1", "2", "3","A", LV_SYMBOL_BACKSPACE, "\n",
 	"4", "5", "6","B", LV_SYMBOL_CLOSE, "\n",
 	"7", "8", "9","C", ",", "\n",
-	"0", "D" , "E","F"," ",
+	"0", "D" , "E","F","abc",
 	NULL
 };
 

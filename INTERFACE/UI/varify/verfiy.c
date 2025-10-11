@@ -69,14 +69,14 @@ uint8_t Verify_Check_isExpired(void)
 	}
 	else
 	{
-		uint8_t res = HAL_CONFIG_READ(3, buf, 50);
+		uint8_t res = HAL_CONFIG_READ(3, buf, 0x20);
 		if (res == 0)
 		{
 			status = SeTboth;
 			return status;
 		}
 	}
-	uint8_t res = HAL_CONFIG_READ(1, buf, 50);
+	uint8_t res = HAL_CONFIG_READ(1, buf, 0x20);
 
 
 	if (res != 0)
@@ -113,8 +113,8 @@ void  Verify_TimeCheck(timetyped* time)
 uint8_t Verify_get_license_Date(timetyped* t)
 {
 
-	uint8_t buf[50] = { 0 };
-	uint8_t res = HAL_CONFIG_READ(1, buf, 50);
+	uint8_t buf[0x20] = { 0 };
+	uint8_t res = HAL_CONFIG_READ(1, buf, 0x20);
 	if (res != 0)
 	{
 		memcpy(t, buf, sizeof(timetyped));

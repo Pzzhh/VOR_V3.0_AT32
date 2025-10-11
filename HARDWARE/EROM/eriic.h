@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
  * @Date: 2025-09-11 15:50:36
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-09-22 11:18:53
+ * @LastEditTime: 2025-10-09 16:41:40
  * @FilePath: \Slave_At32\HARDWARE\TOUCH\ctiic.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -33,6 +33,19 @@
 #define ER_IIC_SDA GPIOG->odt_bit.odt8  // SDA
 #define ER_READ_SDA GPIOG->idt_bit.idt8 // 输入SDA
 
+#define IIC_READ_SDA ER_READ_SDA
+
+/* IO操作 */
+#define IIC_SCL(x)      \
+    {                   \
+        ER_IIC_SCL = x; \
+    } /* SCL */
+
+#define IIC_SDA(x)      \
+    {                   \
+        ER_IIC_SDA = x; \
+    } /* SDA */
+
 // IIC所有操作函数
 void ER_IIC_Init(void);                 // 初始化IIC的IO口
 void ER_IIC_Start(void);                // 发送IIC开始信号
@@ -42,7 +55,9 @@ u8 ER_IIC_Read_Byte(unsigned char ack); // IIC读取一个字节
 u8 ER_IIC_Wait_Ack(void);               // IIC等待ACK信号
 void ER_IIC_Ack(void);                  // IIC发送ACK信号
 void ER_IIC_NAck(void);                 // IIC不发送ACK信号
-uint8_t ER_IIC_Write_Bytes(uint8_t I2C_Addr, uint16_t addr, uint8_t *buf, uint8_t len);
-uint8_t ER_IIC_Read_Bytes(uint8_t I2C_Addr, uint16_t addr, uint8_t *buf, uint8_t len);
+uint8_t ER_IIC_Write_Bytes(uint8_t I2C_Addr, uint16_t addr, uint8_t *buf, uint16_t len);
+uint8_t ER_IIC_Read_Bytes(uint8_t I2C_Addr, uint16_t addr, uint8_t *buf, uint16_t len);
 
+uint8_t M24C64_Write_Byte(uint16_t addr, uint8_t *buf, uint16_t len);
+uint8_t M24C64_Read_Byte(uint16_t addr, uint8_t *buf, uint16_t len);
 #endif

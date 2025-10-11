@@ -1,3 +1,11 @@
+/*
+ * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @Date: 2025-09-11 15:50:16
+ * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
+ * @LastEditTime: 2025-10-10 11:39:54
+ * @FilePath: \VOR_V3.0_AT32\INTERFACE\LVGL\lvgl\src\hal\lv_hal_tick.c
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 /**
  * @file lv_hal_tick.c
  * Provide access to the system tick with 1 millisecond resolution
@@ -52,30 +60,14 @@ LV_ATTRIBUTE_TICK_INC void lv_tick_inc(uint32_t tick_period)
     sys_time += tick_period;
 }
 #endif
-
+#include "../UI/other/system_function.h"
 /**
  * Get the elapsed milliseconds since start up
  * @return the elapsed milliseconds
  */
 uint32_t lv_tick_get(void)
 {
-#if LV_TICK_CUSTOM == 0
-
-    /*If `lv_tick_inc` is called from an interrupt while `sys_time` is read
-     *the result might be corrupted.
-     *This loop detects if `lv_tick_inc` was called while reading `sys_time`.
-     *If `tick_irq_flag` was cleared in `lv_tick_inc` try to read again
-     *until `tick_irq_flag` remains `1`.*/
-    uint32_t result;
-    do {
-        tick_irq_flag = 1;
-        result        = sys_time;
-    } while(!tick_irq_flag); /*Continue until see a non interrupted cycle*/
-
-    return result;
-#else
-    return LV_TICK_CUSTOM_SYS_TIME_EXPR;
-#endif
+    return ControlGetTick();
 }
 
 /**

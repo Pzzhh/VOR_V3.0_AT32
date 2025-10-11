@@ -533,9 +533,9 @@ struct
 	} cmd_typed;
 	Task_Parameter_Struct* task;
 	Task_Parameter_Struct* taskArray[15];
-	uint16_t task_id;
-	uint16_t task_id2;
-	uint8_t isvaild;
+	uint32_t task_id;
+	uint32_t task_id2;
+	uint32_t isvaild;
 	uint16_t error_counter;
 } task_msg;
 
@@ -549,9 +549,10 @@ void UI_Page1_Send_ADD_Cmd(uint8_t* msg, uint16_t msg_size,
 		int index = 0;
 		if (sscanf(msg, "SYNC %d", &index) == 1)
 		{
+						memcpy(task_msg.taskArray, src, sizeof(Task_Parameter_Struct *) * index);
 			task_msg.cmd_typed = cmd_sync;
 			task_msg.isvaild = 1;
-			memcpy(task_msg.taskArray, src, sizeof(Task_Parameter_Struct) * index);
+
 			task_msg.task_id = index;
 		}
 		return;

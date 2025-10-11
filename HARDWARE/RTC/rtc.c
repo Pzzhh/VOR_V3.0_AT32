@@ -26,7 +26,7 @@
 // #include "./BSP/LED/led.h"
 // #include "./SYSTEM/usart/usart.h"
 // #include "./SYSTEM/delay/delay.h"
-
+static uint8_t islossync = 0; 
 /**
  * @brief       等待RSF同步
  * @param       无
@@ -298,10 +298,11 @@ uint8_t rtc_init(void)
     if (ertc_bpr_data_read(ERTC_DT1) != 0x1234)
     {
         ertc_config();
+        islossync=1;
     }
     ertc_wait_update();
 
-    return 0;
+    return islossync;
 }
 
 /**

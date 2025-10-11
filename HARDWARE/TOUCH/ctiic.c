@@ -52,7 +52,7 @@ void CT_IIC_Start(void)
 	CT_SDA_OUT();     //sda线输出
 	CT_IIC_SDA=1;	  	  
 	CT_IIC_SCL=1;
-	delay_us(30);
+	delay_us(5);
  	CT_IIC_SDA=0;//START:when CLK is high,DATA change form high to low 
 	CT_Delay();
 	CT_IIC_SCL=0;//钳住I2C总线，准备发送或接收数据 
@@ -61,11 +61,12 @@ void CT_IIC_Start(void)
 void CT_IIC_Stop(void)
 {
 	CT_SDA_OUT();//sda线输出
+	CT_IIC_SDA=0;
+	CT_Delay();
 	CT_IIC_SCL=1;
-	delay_us(30);
-	CT_IIC_SDA=0;//STOP:when CLK is high DATA change form low to high
 	CT_Delay();
 	CT_IIC_SDA=1;//发送I2C总线结束信号  
+	CT_Delay();
 }
 //等待应答信号到来
 //返回值：1，接收应答失败
@@ -74,7 +75,8 @@ u8 CT_IIC_Wait_Ack(void)
 {
 	u8 ucErrTime=0;
 	CT_SDA_IN();      //SDA设置为输入  
-	CT_IIC_SDA=1;	   
+	CT_IIC_SDA=1;	
+	CT_Delay();   
 	CT_IIC_SCL=1;
 	CT_Delay();
 	while(CT_READ_SDA)
@@ -101,6 +103,7 @@ void CT_IIC_Ack(void)
 	CT_IIC_SCL=1;
 	CT_Delay();
 	CT_IIC_SCL=0;
+	CT_IIC_SDA=1;
 }
 //不产生ACK应答		    
 void CT_IIC_NAck(void)
@@ -127,7 +130,8 @@ void CT_IIC_Send_Byte(u8 txd)
 	for(t=0;t<8;t++)
     {              
         CT_IIC_SDA=(txd&0x80)>>7;
-        txd<<=1; 	      
+        txd<<=1; 	  
+		CT_Delay();    
 		CT_IIC_SCL=1; 
 		CT_Delay();
 		CT_IIC_SCL=0;	
@@ -139,7 +143,7 @@ u8 CT_IIC_Read_Byte(unsigned char ack)
 {
 	u8 i,receive=0;
  	CT_SDA_IN();//SDA设置为输入
-	delay_us(30);
+	delay_us(5);
 	for(i=0;i<8;i++ )
 	{ 
 		CT_IIC_SCL=0; 	    	   
