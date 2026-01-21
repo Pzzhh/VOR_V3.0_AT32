@@ -431,7 +431,7 @@ uint8_t HAL_TIME_Get(timetyped *time)
 #else
 	SYSTEMTIME st;
 	GetLocalTime(&st);
-	simtime.date.year = st.wYear+1;
+	simtime.date.year = st.wYear;
 	simtime.date.month = st.wMonth;
 	simtime.date.date = st.wDay;
 	simtime.date.hour = st.wHour;

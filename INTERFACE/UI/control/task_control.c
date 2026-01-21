@@ -93,7 +93,7 @@ void PrintfInfo(Task_Parameter_Struct* e, char* mousename, uint8_t LR)
 void RK3588_SendTaskInfo(uint16_t tasksize, uint8_t LR)
 {
 	Task_Parameter_Struct* e;
-	char* mousename = (char*)malloc(50);
+	char* mousename = (char*)system_malloc(50);
 	mousename[0] = 0;
 	HAL_Get_UI_MouseName(mousename, 50);
 	if (mousename[0] == 0)

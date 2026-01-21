@@ -198,10 +198,10 @@ uint8_t OvarControlFunction(Task_Parameter_Struct *task,
 	// Ö´ĞĞ²¿·Ö
 	MYPRINTF("\r\n");
 	e->UI_para.state = taskruning;
-	Inc_handle(task->OVAR.Inc_Degree);
+	// Inc_handle(task->OVAR.Inc_Degree);
 	motor_handle(task, e);
-	if (isretract == 1||e->State_Bit.Exit)
-		Inc_handle(0);
+
+	
 	Ctrl_Msg_Printf("OVAR end ");
 	MYPRINTF("\r\n ovar end");
 	e->UI_para.state = taskend;

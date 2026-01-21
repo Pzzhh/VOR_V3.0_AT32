@@ -210,11 +210,11 @@ void *message_malloc(size_t size)
     return malloc(size);
 }
 
-void message_free(void *pt)
+void *system_malloc(size_t size)
 {
-    free(pt);
-    return;
+    return malloc(size);
 }
+
 
 uint8_t Message_Center_Send_prinft(
     const char *name,
@@ -236,7 +236,7 @@ uint8_t Message_Center_Send_prinft(
             return para_Error;
         if (strcmp(name, node->name) == 0)
         {
-            char *string = malloc(40);
+            char *string = system_malloc(40);
             if (string == 0)
                 return memory_malloc_fail;
             memset(string, 0, 40);

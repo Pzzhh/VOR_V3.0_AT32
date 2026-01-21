@@ -162,6 +162,11 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 header file. */
 #define configASSERT( x ) if( ( x ) == 0 ) { taskDISABLE_INTERRUPTS(); for( ;; ); }
 
+/* Enable task state and runtime statistics collection */
+#define configUSE_TRACE_FACILITY              1
+#define configGENERATE_RUN_TIME_STATS         0
+#define INCLUDE_uxTaskGetSystemState          1
+
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
 standard names. */
 #define vPortSVCHandler SVC_Handler
@@ -170,4 +175,3 @@ standard names. */
 
 
 #endif /* FREERTOS_CONFIG_H */
-

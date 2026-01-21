@@ -23,7 +23,37 @@ extern "C"
 	int Hal_Rk3588_R_Readarray(char* bytes);
 	//UART6 left
 	int Hal_Rk3588_L_Readarray(char* bytes);
-	int HAL_USB_Isconnect();
+	int HAL_USB_Isconnect(void);
+	
+	// USB ACM functions
+	uint8_t HAL_USB_ACM_Init(void);
+	uint8_t HAL_USB_ACM_Send(uint8_t* data, uint16_t len);
+	uint16_t HAL_USB_ACM_Read(uint8_t* buffer, uint16_t maxlen);
+	uint8_t HAL_USB_ACM_IsReady(void);
+	
+	// USB ACM Log functions
+	void HAL_USB_Log_Printf(const char* format, ...);
+	void HAL_USB_Log_Task_Operation(const char* operation, uint16_t index, const char* details);
+	void HAL_USB_Log_Task_Detail(const char* operation, uint16_t index, void* task);
+	
+	// LVGL Memory Analysis
+	void HAL_USB_LVGL_Memory_Analysis(void);
+	
+	// FreeRTOS Heap Analysis
+	void HAL_USB_Heap_Analysis(void);
+	
+	// Task Stack Analysis
+	void HAL_USB_Stack_Analysis(void);
+	
+	// Full Memory Check
+	void HAL_USB_Memory_Full_Check(void);
+	
+	// Task Priority Diagnosis
+	void HAL_USB_Task_Priority_Diagnosis(void);
+	
+	// Command Processing
+	void HAL_USB_Command_Process(const char* cmd);
+	void HAL_USB_Command_Handler(void);  // Main loop handler
 
 #ifdef __cplusplus
 }

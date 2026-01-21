@@ -835,7 +835,7 @@ void controlfunction()
 			}*/
 		}
 #ifndef ATM32F43_xx
-		//control_info.State_Bit.powerUp = 0;
+		control_info.State_Bit.powerUp = 0;
 		control_info.State_Bit.WaitRk = 0;
 		control_info.Rk3588_Flag.Rflag = 0;
 		// control_info.Rk3588_Flag.Lflag = 0;
@@ -892,7 +892,7 @@ void thread_create(void* function, Task_control_info* e, TaskHandle_t* control_t
 			(const char*)"Outside_motor",
 			(uint16_t)sizeofstack,
 			(void*)e,
-			(UBaseType_t)2,
+			(UBaseType_t)5,
 			(TaskHandle_t*)&control_thread);
 #endif
 }

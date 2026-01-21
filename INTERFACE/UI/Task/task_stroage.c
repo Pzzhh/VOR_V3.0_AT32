@@ -14,45 +14,45 @@
 typedef struct
 {
 	int data;
-	Task_Parameter_Struct* instant;
-	struct Node_Task_Stroage* next;
+	Task_Parameter_Struct *instant;
+	struct Node_Task_Stroage *next;
 } Node_Task_Stroage;
 
 // 定义链表结构
 typedef struct
 {
-	Node_Task_Stroage* head;
+	Node_Task_Stroage *head;
 	int size;
-	void (*_free)(void* _Block);
-	void* (*_malloc)(size_t size);
+	void (*_free)(void *_Block);
+	void *(*_malloc)(size_t size);
 } List_Task_Stroage;
 
 //
 typedef struct
 {
-	List_Task_Stroage* list;
+	List_Task_Stroage *list;
 } Task_Stroage_Struct;
 uint8_t task_change_ready;
 Task_Stroage_Struct task;
 // find id by instant address
-uint8_t Task_Stroage_GetIndexByInstant(Task_Parameter_Struct* info, int* Index);
+uint8_t Task_Stroage_GetIndexByInstant(Task_Parameter_Struct *info, int *Index);
 // 输入输出接口
-uint8_t Task_Stroage_Get(Task_Parameter_Struct* info, short INDEX)
+uint8_t Task_Stroage_Get(Task_Parameter_Struct *info, short INDEX)
 {
-	Node_Task_Stroage* node = (Node_Task_Stroage*)FindNode((List*)task.list, INDEX);
+	Node_Task_Stroage *node = (Node_Task_Stroage *)FindNode((List *)task.list, INDEX);
 	if (node == NULL)
 		return 0;
-	Task_Parameter_Struct* src = node->instant;
+	Task_Parameter_Struct *src = node->instant;
 	memcpy(info, src, sizeof(Task_Parameter_Struct));
 	return 1;
 }
 
 uint8_t Task_Stroage_Set(Task_Parameter_Struct src, short INDEX)
 {
-	Node_Task_Stroage* node = (Node_Task_Stroage*)FindNode((List*)task.list, INDEX);
+	Node_Task_Stroage *node = (Node_Task_Stroage *)FindNode((List *)task.list, INDEX);
 	if (node == NULL)
 		return 0;
-	Task_Parameter_Struct* traget = node->instant;
+	Task_Parameter_Struct *traget = node->instant;
 	memcpy(traget, &src, sizeof(Task_Parameter_Struct));
 	return 1;
 }
@@ -63,31 +63,33 @@ uint8_t Task_Stroage_Set(Task_Parameter_Struct src, short INDEX)
 // 需要指针保存funtion
 
 // 申请添加
-Task_Parameter_Struct* Task_Stroage_add(Task_Parameter_Struct info)
+Task_Parameter_Struct *Task_Stroage_add(Task_Parameter_Struct info)
 {
-	Task_Parameter_Struct* info_pt = task.list->_malloc(sizeof(Task_Parameter_Struct));
+	Task_Parameter_Struct *info_pt = task.list->_malloc(sizeof(Task_Parameter_Struct));
 	memcpy(info_pt, &info, sizeof(Task_Parameter_Struct));
-	Node_Task_Stroage* node = (Node_Task_Stroage*)add((List*)task.list, info_pt);
-	ID_UPdata((List*)task.list);
+	Node_Task_Stroage *node = (Node_Task_Stroage *)add((List *)task.list, info_pt);
+	ID_UPdata((List *)task.list);
 	return info_pt;
 }
 
 // 申请插入
-Task_Parameter_Struct* Task_Stroage_Insert(Task_Parameter_Struct insert_info, uint16_t insert_index)
+Task_Parameter_Struct *Task_Stroage_Insert(Task_Parameter_Struct insert_info, uint16_t insert_index)
 {
-	List* head = (List*)task.list;
-	Node_Task_Stroage* newnode = 0;
-	Task_Parameter_Struct* info_pt = head->_malloc(sizeof(Task_Parameter_Struct));
+	List *head = (List *)task.list;
+	Node_Task_Stroage *newnode = 0;
+	Task_Parameter_Struct *info_pt = head->_malloc(sizeof(Task_Parameter_Struct));
+	if (info_pt == 0)
+		return 0;
 	memcpy(info_pt, &insert_info, sizeof(Task_Parameter_Struct));
 	if (insert_index == 0xffff)
 	{
-		newnode = (Node_Task_Stroage*)add(head, (void*)info_pt);
+		newnode = (Node_Task_Stroage *)add(head, (void *)info_pt);
 	}
 	else
 	{
-		newnode = (Node_Task_Stroage*)insert(head, insert_index, (void*)info_pt);
+		newnode = (Node_Task_Stroage *)insert(head, insert_index, (void *)info_pt);
 		if (newnode == 0)
-			newnode = (Node_Task_Stroage*)add(head, info_pt);
+			newnode = (Node_Task_Stroage *)add(head, info_pt);
 	}
 	ID_UPdata(head);
 	return info_pt;
@@ -96,34 +98,24 @@ Task_Parameter_Struct* Task_Stroage_Insert(Task_Parameter_Struct insert_info, ui
 // 申请删除
 uint8_t Task_Stroage_delByID(short ID)
 {
-	List* head = (List*)task.list;
+	List *head = (List *)task.list;
 	if (ID < 0)
 		return 0;
-	Node* node = FindNode(head, ID);
+	Node *node = FindNode(head, ID);
 	if (node == 0)
 		return 0;
 	if (node->instant != 0)
-		head->_free(node->instant);
-	removeNode(head, ID);
+	{
+		removeNode(head, ID);
+	}
 	return 1;
 }
 
 uint8_t Task_Stroage_MoveByID(uint16_t swap1, uint16_t swap2)
 {
-	List* head = (List*)task.list;
+	List *head = (List *)task.list;
 	move(head, swap1, swap2);
 	ID_UPdata(head);
-	return 1;
-}
-
-// 申请删除
-uint8_t Task_Stroage_del(Task_Parameter_Struct* info)
-{
-	List* head = (List*)task.list;
-	if (info == 0)
-		return 0;
-	DelNodeByInstant(head, info);
-	head->_free(info);
 	return 1;
 }
 
@@ -132,15 +124,15 @@ uint8_t Task_Stroage_delAll(void)
 	int res = 1;
 	while (res)
 	{
-		res= Task_Stroage_delByID(0);
+		res = Task_Stroage_delByID(0);
 	}
 }
 
 // find id by instant address
-uint8_t Task_Stroage_GetIndexByInstant(Task_Parameter_Struct* info, int* Index)
+uint8_t Task_Stroage_GetIndexByInstant(Task_Parameter_Struct *info, int *Index)
 {
-	List* head = (List*)task.list;
-	Node* node = FindNodeByInstant(head, info);
+	List *head = (List *)task.list;
+	Node *node = FindNodeByInstant(head, info);
 	if (node == 0)
 		return 0;
 	int id = node->data;
@@ -148,21 +140,21 @@ uint8_t Task_Stroage_GetIndexByInstant(Task_Parameter_Struct* info, int* Index)
 	return 1;
 }
 
-uint16_t Task_Stroage_GetArray(Task_Parameter_Struct* taskarray, uint16_t arraySize)
+uint16_t Task_Stroage_GetArray(Task_Parameter_Struct *taskarray, uint16_t arraySize)
 {
 	uint16_t ID = 0;
 	uint16_t arrayWriteIndex = 0;
-	List* head = (List*)task.list;
+	List *head = (List *)task.list;
 	if (taskarray == 0 || arraySize == 0)
 		return 0;
 	while (1)
 	{
-		Node* node = FindNode(head, ID++);
+		Node *node = FindNode(head, ID++);
 		if (node == 0)
 			break;
 		if (node->instant != 0)
 		{
-			Task_Parameter_Struct* instant = node->instant;
+			Task_Parameter_Struct *instant = node->instant;
 			taskarray[arrayWriteIndex++] = *instant;
 		}
 	}
@@ -171,7 +163,7 @@ uint16_t Task_Stroage_GetArray(Task_Parameter_Struct* taskarray, uint16_t arrayS
 
 int Task_Stroage_GetSize()
 {
-	List* head = (List*)task.list;
+	List *head = (List *)task.list;
 	return head->size;
 }
 
@@ -201,10 +193,10 @@ void Task_Stroage_handle(void)
 // 初始化
 void Task_Stroage_Init()
 {
-	List* list = (List*)malloc(sizeof(List));
+	List *list = (List *)system_malloc(sizeof(List));
 	/// memset(list, 0, sizeof(List));
 	List_init(list);
 	list->_free = free;
-	list->_malloc = malloc;
-	task.list = (List_Task_Stroage*)list;
+	list->_malloc = system_malloc;
+	task.list = (List_Task_Stroage *)list;
 }

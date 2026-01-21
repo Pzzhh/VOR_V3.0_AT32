@@ -80,6 +80,7 @@ uint16_t channel1pulse = 0, channel2pulse = 0, channel3pulse = 0, channel4pulse 
 #include "../INTERFACE/UI/other/system_function.h"
 #include "../other/meassage_center.h"
 #include "../HARDWARE/Motor/inc_motor.h"
+#include "../commuication/communication_API.h"  // USB м╗пе API
 
 volatile int idex = 0;
 int *pt = (int *)0x20001000;
@@ -143,6 +144,7 @@ void LVGL_HANDLER()
       touch_sever(1, NULL);
       touch_tick = ControlGetTick();
     }
+    
     lv_task_handler();
     ControlDelay(2);
   }
@@ -179,7 +181,7 @@ int main(void)
               (const char *)"Outside_motor",
               (uint16_t)8000,
               (void *)NULL,
-              (UBaseType_t)3,
+              (UBaseType_t)1,
               (TaskHandle_t *)&handle);
   vTaskStartScheduler();
 }

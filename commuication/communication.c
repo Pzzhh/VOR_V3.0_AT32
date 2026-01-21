@@ -23,7 +23,11 @@ void communication_thread()
 //				jump_to_bootloader();
 		ControlGetTick();
 		HAL_BL_USART_Server();
-		ControlDelay(1);
+#ifdef ATM32F43_xx
+		// USB√¸¡Ó¥¶¿Ì
+		HAL_USB_Command_Handler();
+#endif
+		ControlDelay(10);
 	}
 }
 uint32_t taskhand[2];

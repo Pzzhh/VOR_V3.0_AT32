@@ -238,6 +238,8 @@ void ui1_(Table_Property *p)
 void UI_Task_Btn_ADD_Callback(uint16_t fouces_index, Task_Parameter_Struct *pt)
 {
 	touch_counter++;
+	if (pt->mode > Task_TC)
+		return;
 	lv_obj_t *table = UI_Table_Create(table_Contain_Property, ui1_, fouces_index);
 	Table_Property *table_Property = UI_Table_Get_Property(table);
 	parent_bo2[parent_bo2_index++] = table;
@@ -275,8 +277,8 @@ void UI_Zero_Btn_Click_Event(lv_event_t *e)
 
 void UI_Task_Btn_ADD_Click_Event(lv_event_t *e)
 {
-	// if (isTaskBtnClick)
-	// 	return;
+	if (isTaskBtnClick)
+		return;
 	isTaskBtnClick = 1;
 	uint32_t handleID;
 	// volatile Control_flag *add_flag = &Control_Add_Task.flag;		//避免汇编�??访问reg导致错�??
@@ -292,8 +294,8 @@ void UI_Task_Btn_ADD_Click_Event(lv_event_t *e)
 	Task_manager_Begin_Req(&handleID);
 	res = Task_manager_Req_add(handleID, fouces_index, Page_Add_Task.info);
 	Task_manager_End_release(handleID);
-	// if (res)
-	isTaskBtnClick = 0;
+	if (res)
+		isTaskBtnClick = 0;
 }
 
 void UI_Task_Btn_Move_Callback(uint16_t swap_index1, uint16_t swap_index2)
@@ -310,8 +312,8 @@ void UI_Task_Btn_Move_Callback(uint16_t swap_index1, uint16_t swap_index2)
 
 void UI_Task_Btn_Move_Click_Event(lv_event_t *e)
 {
-	// if (isTaskBtnClick)
-	// 	return;
+	if (isTaskBtnClick)
+		return;
 	isTaskBtnClick = 1;
 	uint32_t handleID;
 	int fouces_index = UI_Table_Get_Fouces(table_Contain_Property);
@@ -329,8 +331,8 @@ void UI_Task_Btn_Save_Callback(uint16_t fouces_index, Task_Parameter_Struct *src
 
 void UI_Task_Btn_Save_Click_Event(lv_event_t *e)
 {
-	// if (isTaskBtnClick)
-	// 	return;
+	if (isTaskBtnClick)
+		return;
 	isTaskBtnClick = 1;
 	uint32_t handleID = 0;
 	Task_Parameter_Struct src;
@@ -339,7 +341,8 @@ void UI_Task_Btn_Save_Click_Event(lv_event_t *e)
 	Task_manager_Begin_Req(&handleID);
 	Task_manager_Req_Save(handleID, fouces_index, src);
 	Task_manager_End_release(handleID);
-	isTaskBtnClick = 0; // save didnt have callback so mannual set mutx to 0
+
+	// isTaskBtnClick = 0; // save didnt have callback so mannual set mutx to 0
 }
 
 void UI_Task_Btn_Del_Callback(uint16_t fouces_index)
@@ -358,8 +361,8 @@ void UI_Task_table_CLEAN_Callback()
 
 void UI_Task_Btn_Del_Click_Event(lv_event_t *e)
 {
-	// if (isTaskBtnClick)
-	// 	return;
+	if (isTaskBtnClick)
+		return;
 	isTaskBtnClick = 1;
 	static const Task_Parameter_Struct del_templete = {.mode = 0xff};
 	int fouces_index = UI_Table_Get_Fouces(table_Contain_Property);
@@ -374,8 +377,8 @@ void UI_Task_Btn_Del_Click_Event(lv_event_t *e)
 	Task_manager_Begin_Req(&handleID);
 	uint8_t res = Task_manager_Req_Del(handleID, fouces_index);
 	Task_manager_End_release(handleID);
-	//	if (res!=wrong_handleID)
-	isTaskBtnClick = 0;
+	if (res)
+		isTaskBtnClick = 0;
 }
 
 void UI_Zero_Btn_Init(lv_obj_t *parent)
@@ -547,6 +550,12 @@ void UI_Page1_Send_ADD_Cmd(uint8_t *msg, uint16_t msg_size,
 {
 	// if (task_msg.isvaild)
 	//	return;
+	if (Msg_COMPARE("ERROR", msg))
+	{
+		task_msg.isvaild = 0;
+		isTaskBtnClick = 0;
+		return;
+	}
 	if (Msg_COMPARE("SYNC", msg))
 	{
 		int index = 0;
@@ -821,36 +830,15 @@ void UI_Page1_Btn_Refulsh()
 
 void UI_Page1_Msg_Refulsh()
 {
-	const int mallocSize = 40;
-	char *str = message_malloc(mallocSize);
-	if (str == 0)
-		return;
-	memset(str, 0, mallocSize);
-	if (Message_Center_Read_prinft("Ctrl", str, mallocSize, "Msg?") == 0)
+	static char str[40]; // ← 改成静态，只分配一次
+
+	memset(str, 0, sizeof(str));
+	if (Message_Center_Read_prinft("Ctrl", str, sizeof(str), "Msg?") == 0)
 	{
 		lv_label_set_text(Msg_Label, str);
 		lv_obj_invalidate(Msg_Label);
 	}
-	/*if (Message_Center_Read_prinft("Ctrl", str, mallocSize, "WifiMsg?") == 0)
-	{
-		lv_label_set_text(MsgWifi_Label, str);
-		lv_obj_invalidate(Msg_Label);
-	}*/
-	free(str);
-	// const char *newline = "\r\n";
-	// const int mallocSize = 40;
-	// char* str = message_malloc(mallocSize);
-	// if (str == 0)
-	//	return;
-	// memset(str, 0, mallocSize);
-	// if (Message_Center_Read_prinft("Ctrl", str, mallocSize, "Msg?") == 0)
-	//{
-	//	lv_textarea_add_text(Msg_Label, str);
-	//	lv_textarea_add_text(Msg_Label, newline);
-	//	/*	lv_label_set_text(Msg_Label, str);
-	//		lv_obj_invalidate(Msg_Label);*/
-	// }
-	// free(str);
+	// 无需malloc/free
 }
 
 void UI_Page1_Respone_Updata_Msg(uint8_t flag, uint16_t ID)

@@ -137,7 +137,7 @@ long ControlThreadCreate(void* function,     // set thread code
 			(const char*)name,
 			(uint16_t)sizeofstack,
 			(void*)e,
-			(UBaseType_t)2,
+			(UBaseType_t)5,
 			(TaskHandle_t*)&taskhandle_t);
 	return res;
 #endif
