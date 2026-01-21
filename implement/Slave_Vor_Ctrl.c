@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-24 14:44:19
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-04-25 10:02:49
+ * @LastEditTime: 2025-11-20 14:40:41
  * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\implement\Slave_Vor_Ctrl.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -31,7 +31,8 @@ typedef struct
     {
         running,
         end,
-        pause
+        pause,
+        IO_ready = 128
     } state;
     uint8_t RepPause;
     uint8_t RepStop;
@@ -49,16 +50,16 @@ Vor_Machine_parameter vor_para;
 #define Pi 3.1415926
 const uint16_t PauseStopCount = 500;
 
-int C610SpdCompensetion = 500;
+int C610SpdCompensetion = 568;
 extern uint8_t HAL_CAM_SET_sign_led(void);
 
 void MotorSpeedSet(float sin_data, float factor)
 {
     if (vor_para.ExMode == Ex_BOTH ||
         vor_para.ExMode == Ex_OKR)
-        Motor_Set_Speed(-vor_para.vel * sin_data * factor * (C610SpdCompensetion / 500));
+        Motor_Set_Speed(-vor_para.vel * sin_data * factor * ((float)C610SpdCompensetion / 500.0f));
     else if (vor_para.ExMode == Ex_BOTH_R)
-        Motor_Set_Speed(vor_para.vel * sin_data * factor * (C610SpdCompensetion / 500));
+        Motor_Set_Speed(vor_para.vel * sin_data * factor * ((float)C610SpdCompensetion / 500.0f));
     else
         Motor_Set_Speed(0);
 
@@ -74,6 +75,17 @@ uint8_t Slave_motor(void)
     float sin_data;
     if (vor_para.RepStop)
         return 1;
+    if (vor_para.state & IO_ready)
+    {
+        Slave1_TIM(0);
+        Slave1_En_IO(1);
+        vor_para.Tick++;
+        if (vor_para.Tick > 1000)
+        {
+            vor_para.Tick = 0;
+            vor_para.state &= (~IO_ready);
+        }
+    }
     if (vor_para.state == running)
     {
         uint32_t Phase_2Pi = 1000.0f / vor_para.freq;
@@ -146,7 +158,7 @@ uint8_t VOR_Machine_Init(float freq, float vel, uint32_t count, uint8_t Exmode)
     Slave1_Step_Generator_Init(50000, 10);
     Slave1_Set_Machine_Cb(VOR_handler);
     vor_para.Tick = 0;
-    vor_para.state = running;
+    vor_para.state = running | IO_ready;
     vor_para.RepPause = 0;
     vor_para.RepStop = 0;
 #endif

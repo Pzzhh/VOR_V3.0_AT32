@@ -2,9 +2,9 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-24 14:44:19
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-02-06 15:53:35
+ * @LastEditTime: 2025-10-17 17:20:35
  * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\implement\Slave_Vor_Ctrl.c
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE_
  */
 #include "at32f435_437.h"
 #include "Slave_OVAR_Ctrl.h"
@@ -23,7 +23,8 @@ typedef struct
         running,
         back,
         end,
-        pause
+        pause,
+        IO_ready = 128
     } state;
     uint32_t Tick;
     float vel;
@@ -43,6 +44,18 @@ void OVAR_Back_init(float tragetPos, float sps, float accMs);
 static uint8_t motor_set(void)
 {
     uint8_t res;
+    if (ovar_para.state & IO_ready)
+    {
+        // sla
+        Slave1_TIM(0);
+        Slave1_En_IO(1);
+        ovar_para.Tick++;
+        if (ovar_para.Tick > 1000)
+        {
+            ovar_para.Tick = 0;
+            ovar_para.state &= (~IO_ready);
+        }
+    }
     if (ovar_para.state == running)
     {
         ovar_para.accTimer = (ovar_para.accTimer >= 1000) ? 1000 : ovar_para.accTimer + 1;
@@ -114,7 +127,7 @@ uint8_t OVAR_Machine_Init(float vel, uint32_t MillSec)
     ovar_para.MillSecReq = MillSec;
     ovar_para.Tick = 0;
     ovar_para.accTimer = 0;
-    ovar_para.state = running;
+    ovar_para.state = running|IO_ready;
     Slave1_Step_Generator_Init(50000, 10);
     Slave1_Set_Machine_Cb(OVAR_handler);
 #endif

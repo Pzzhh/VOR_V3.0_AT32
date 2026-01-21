@@ -27,6 +27,8 @@ typedef struct
     uint32_t MillSecReq;
     uint16_t accTimer;
     uint8_t ioflag;
+		uint16_t zeroIRCNT;
+		uint16_t zeroNRCNT;
     // uint8_t backtick;
     float vel;
     Speed_Cal_Struct back;
@@ -73,14 +75,20 @@ static void slave_Reqstop()
 
 static void slave_Back_Zero_init()
 {
-    float tick ;
-	tick=	Slave1_Get_Encode_Angle() * 1000;
-    float vel = 20;
+    float tick ,angle=	Slave1_Get_Encode_Angle() ;
+	  float vel = 20,velabs=20;
+		angle=(angle<0)?-angle:angle;
+		tick=	Slave1_Get_Encode_Angle() * 1000;
+			if(angle<20)
+			{
+				velabs=angle;
+				vel=angle;
+			}
     if (tick < 0)
         tick = -tick;
     else
         vel = -vel;
-    tick = tick / 20;
+    tick = tick / velabs;
     slave_begin(vel, tick);
 }
 
@@ -100,11 +108,19 @@ static uint8_t motor_set(void)
         // if(zero_para.ioflag<=2)
         if (IR_IO_Get() == 1 && zero_para.ioflag == 0)
         {
-            Slave1_Check_Encode_Angle();
-            Slave1_Set_Encode_Angle(-90.0f);
+						zero_para.zeroIRCNT++;
+           
+        }else
+				{
+					zero_para.zeroIRCNT=0;
+				}
+				if(	zero_para.zeroIRCNT>20)
+				{
+					 Slave1_Check_Encode_Angle();
+            Slave1_Set_Encode_Angle(-87.0f);
             slave_Reqstop();
             zero_para.ioflag = 1;
-        }
+				}
         if (Flag == 1)
         {
             if (zero_para.ioflag)
@@ -120,11 +136,18 @@ static uint8_t motor_set(void)
     }
     if (zero_para.state == back)
     {
-        uint8_t Flag = slave_motivate();
+			
+			  Slave1_En_IO(1);
+			if(zero_para.zeroNRCNT>1000)
+			{
+				uint8_t Flag = slave_motivate();
         if (Flag == 1)
         {
+					zero_para.zeroNRCNT=0;
             return 1;
         }
+			}else
+			zero_para.zeroNRCNT++;
     }
     return 0;
 }

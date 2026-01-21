@@ -23,6 +23,11 @@ void Slave1_IO_Init(void)
 
 }
 
+void Slave1_TIM(uint8_t state)
+{
+    TMR1->ctrl1_bit.tmren = state;
+}
+
 void Slave1_En_IO(uint8_t state)
 {
     uint16_t *const gpio_reg = (uint16_t *)&GPIOA->scr;

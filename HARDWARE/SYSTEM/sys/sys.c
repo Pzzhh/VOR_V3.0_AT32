@@ -88,6 +88,7 @@ void RequestEnterDFU(void)
 void RequestReset(void)
 {
 	SCB->AIRCR = (0X5FA << 16) + 4; // 软件复位
+	
 }
 
 void DFU_PowerUp_Detection()
@@ -96,7 +97,7 @@ void DFU_PowerUp_Detection()
 	{
 		dfuFlag = 0;
 		// RCC->CSR = 0;	  // 清除标志位
-		JumpBootLoader(); // 进入bootloader
+		// JumpBootLoader(); // 进入bootloader
 	}
 	// RCC->CSR = RCC_CSR_RMVF;
 	dfuFlag = 0;

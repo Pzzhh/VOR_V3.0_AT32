@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-24 14:44:19
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-02-06 15:55:56
+ * @LastEditTime: 2025-10-17 17:23:05
  * @FilePath: \USERd:\workfile\项目3 vor\software\VOR_V2.0\implement\Slave_Vor_Ctrl.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -23,7 +23,8 @@ typedef struct
         running,
         back,
         end,
-        pause
+        pause,
+        	IO_ready=128
     } state;
     uint32_t Tick;
     float vel;
@@ -45,6 +46,18 @@ void Cont_Back_init(float tragetPos, float sps, float accMs);
 static uint8_t motor_set(void)
 {
     uint8_t res;
+     if (cont_para.state & IO_ready)
+    {
+        // sla
+        Slave1_TIM(0);
+        Slave1_En_IO(1);
+        cont_para.Tick++;
+        if (cont_para.Tick > 1000)
+        {
+            cont_para.Tick = 0;
+            cont_para.state &= (~IO_ready);
+        }
+    }
     if (cont_para.state == running)
     {
         cont_para.accTimer = (cont_para.accTimer >= 1000) ? 1000 : cont_para.accTimer + 1;
@@ -52,7 +65,7 @@ static uint8_t motor_set(void)
         float factor = cont_para.accTimer / 1000.0f;
         factor = (factor > 1) ? 1 : factor;
         tim_f_sin_set(angle_step * cont_para.vel * factor);
-				Motor_Set_Speed(-cont_para.okr_vel * factor * (C610SpdCompensetion / 500));
+				Motor_Set_Speed(-cont_para.okr_vel * factor * ((float)C610SpdCompensetion / 500.0f));
         if (cont_para.Tick >= cont_para.MillSecReq || cont_para.ReqPause)
         {
             cont_para.state = back;
@@ -121,7 +134,7 @@ uint8_t CONT_Machine_Init(float vel,float okr_vel, uint32_t MillSec)
     Slave1_Step_Generator_Init(50000, 10);
     Slave1_Set_Machine_Cb(CONT_handler);
     cont_para.Tick = 0;
-    cont_para.state = running;
+    cont_para.state = running|IO_ready;
     cont_para.accTimer = 0;
 #endif
     return 1;

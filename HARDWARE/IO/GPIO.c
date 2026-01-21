@@ -55,8 +55,8 @@ void CAM_GPIO_INIT()
   gpio_init_struct.gpio_pins = GPIO_PINS_15;
   gpio_init(GPIOF, &gpio_init_struct); // SYNC LED
 
-//  gpio_init_struct.gpio_pins = GPIO_PINS_3;
-//  gpio_init(GPIOD, &gpio_init_struct);  // BEEP
+  gpio_init_struct.gpio_pins = GPIO_PINS_3;
+  gpio_init(GPIOD, &gpio_init_struct);  // BEEP
 
   gpio_init_struct.gpio_pins = GPIO_PINS_8;
   gpio_init_struct.gpio_pull = GPIO_PULL_DOWN; //ÏÂÀ­¿ªÆôESP32
@@ -65,8 +65,8 @@ void CAM_GPIO_INIT()
   gpio_bits_reset(GPIOG, GPIO_PINS_0);  // REC
   gpio_bits_reset(GPIOG, GPIO_PINS_1);  // WIFI
   gpio_bits_reset(GPIOF, GPIO_PINS_15); // SYNC LED
-  //gpio_bits_set(GPIOD, GPIO_PINS_3);   // BEEP
-  gpio_bits_set(GPIOC, GPIO_PINS_8);   // ESP32
+  gpio_bits_reset(GPIOD, GPIO_PINS_3);   // BEEP
+  gpio_bits_reset(GPIOC, GPIO_PINS_8);   // ESP32
   Timer_init(1500);
 }
 

@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com
  * @Date: 2025-09-11 15:50:16
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-10-11 11:08:27
+ * @LastEditTime: 2025-10-11 11:12:32
  * @FilePath: \VOR_V3.0_AT32\INTERFACE\UI\UI_Component\UI_KeyBorad.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -63,6 +63,17 @@ void keyboradEvent(lv_event_t* e)
 
 	}
 	//if(code== lv_evnet)
+}
+
+
+
+void del_custom_keyboard(void)
+{
+	if (kb)
+	{
+		lv_obj_del(kb);
+		kb = 0;
+	}
 }
 
 lv_obj_t* get_custom_keyboard(void)

@@ -5,6 +5,7 @@
 #include "page1.h"
 #include "Page_Maintain.h"
 #include "Page_Varify.h"
+//#include "C610.h"
 void UI_Page_Management_Expored();
 static lv_obj_t *top_layer;
 lv_obj_t *UI_Page_Management_Get_Top_layer()
@@ -14,6 +15,7 @@ lv_obj_t *UI_Page_Management_Get_Top_layer()
 
 void Timer_Refresh_handle(lv_timer_t *t)
 {
+	//extern  motor_measure_t motor_chassis[7];
 	lv_obj_t *label = t->user_data;
 	static int i = 0;
 	if (label != 0)
@@ -22,7 +24,7 @@ void Timer_Refresh_handle(lv_timer_t *t)
 		timetyped_UI time = {0};
 		Message_Center_Read_prinft("Ctrl", &time, sizeof(time), "ReqTime");
 		lv_label_set_text_fmt(label, "%04d/%d/%d\n\t%d:%02d:%02d",
-							  time.date.year, time.date.month, time.date.date,
+							time.date.year, time.date.month, time.date.date,
 							  time.date.hour, time.date.min, time.date.sec);
 	}
 	else
@@ -131,10 +133,10 @@ void UI_Page_Management_Init()
 	int value = 0;
 	Message_Center_Read_prinft("Ctrl", &value, sizeof(int), "isNeedSetup");
 	// value = 0;
-	create_custom_keyboard(lv_scr_act(), 1);
+//	Verify_hardResetVaild();
 //	value = 0;
 #ifndef ATM32F43_xx
-	value = 0;
+	//value = 0;
 #endif
 	switch (value)
 	{

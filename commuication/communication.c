@@ -10,11 +10,13 @@
 #include "../INTERFACE/UI/other/system_function.h"
 #include "communication_API.h"
 
+
 extern void jump_to_bootloader(void);
 
 void communication_thread()
 {
 	HAL_communication_Init();
+	//USB1_Init();
 	while (1)
 	{
 //		if( HAL_USB_Isconnect())

@@ -79,9 +79,9 @@
             <nStopB2X>0</nStopB2X>
           </BeforeMake>
           <AfterMake>
-            <RunUserProg1>0</RunUserProg1>
+            <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name></UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --bin --output=1.bin !L</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -275,8 +275,8 @@
               </OCR_RVCT3>
               <OCR_RVCT4>
                 <Type>1</Type>
-                <StartAddress>0x8000000</StartAddress>
-                <Size>0x100000</Size>
+                <StartAddress>0x8001000</StartAddress>
+                <Size>0xa0000</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
                 <Type>1</Type>
@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>AT32F435ZMT7,USE_STDPERIPH_DRIVER,AT_START_F435_V1,ATM32F43_xx</Define>
               <Undefine></Undefine>
-              <IncludePath>.\libraries\drivers\inc;.\inc;.\libraries\cmsis\cm4\core_support;.\libraries\cmsis\cm4\device_support;.\middleLib\freertos\source\include;.\middleLib\freertos\source\portable\memmang;.\middleLib\freertos\source\portable\rvds\ARM_CM4F;.\cfg;.\HARDWARE\SYSTEM\delay;.\HARDWARE\LCD;.\HARDWARE\TOUCH;.\INTERFACE\LVGL\lvgl;.\INTERFACE\LVGL\lvgl\lsrc;.\INTERFACE\LVGL\lvgl\src\core;.\INTERFACE\LVGL\lvgl\src\draw;.\INTERFACE\LVGL\lvgl\src\font;.\INTERFACE\LVGL\lvgl\src\hal;.\INTERFACE\LVGL\lvgl\src\misc;.\INTERFACE\LVGL\lvgl\src\theme;.\INTERFACE\LVGL\lvgl\src\widgets;.\INTERFACE\LVGL\lvgl\src\extra;.\INTERFACE\LVGL\lvgl\src\extra\layouts;.\INTERFACE\LVGL\lvgl\src\extra\layout\flex;.\INTERFACE\LVGL\lv_port;.\INTERFACE\LVGL\lvgl\src\extra\layouts\flex;.\INTERFACE\LVGL\lvgl\src\extra\layouts\grid;.\INTERFACE\LVGL\lvgl\src\extra\libs;.\INTERFACE\LVGL\lvgl\src\extra\others;.\INTERFACE\LVGL\lvgl\src\extra\themes;.\INTERFACE\LVGL\lvgl\src\extra\widgets;.\INTERFACE\LVGL\lvgl\src\extra\themes\basic;.\INTERFACE\LVGL\lvgl\src\extra\libs\qrcode;.\HARDWARE\SYSTEM\sys;.\HARDWARE\SYSTEM\delay;.\HARDWARE\SYSTEM\usart;.\INTERFACE\LVGL;.\INTERFACE\UI;.\INTERFACE\UI\control;.\HARDWARE\TOUCH</IncludePath>
+              <IncludePath>.\libraries\drivers\inc;.\inc;.\libraries\cmsis\cm4\core_support;.\libraries\cmsis\cm4\device_support;.\middleLib\freertos\source\include;.\middleLib\freertos\source\portable\memmang;.\middleLib\freertos\source\portable\rvds\ARM_CM4F;.\cfg;.\HARDWARE\SYSTEM\delay;.\HARDWARE\LCD;.\HARDWARE\TOUCH;.\INTERFACE\LVGL\lvgl;.\INTERFACE\LVGL\lvgl\lsrc;.\INTERFACE\LVGL\lvgl\src\core;.\INTERFACE\LVGL\lvgl\src\draw;.\INTERFACE\LVGL\lvgl\src\font;.\INTERFACE\LVGL\lvgl\src\hal;.\INTERFACE\LVGL\lvgl\src\misc;.\INTERFACE\LVGL\lvgl\src\theme;.\INTERFACE\LVGL\lvgl\src\widgets;.\INTERFACE\LVGL\lvgl\src\extra;.\INTERFACE\LVGL\lvgl\src\extra\layouts;.\INTERFACE\LVGL\lvgl\src\extra\layout\flex;.\INTERFACE\LVGL\lv_port;.\INTERFACE\LVGL\lvgl\src\extra\layouts\flex;.\INTERFACE\LVGL\lvgl\src\extra\layouts\grid;.\INTERFACE\LVGL\lvgl\src\extra\libs;.\INTERFACE\LVGL\lvgl\src\extra\others;.\INTERFACE\LVGL\lvgl\src\extra\themes;.\INTERFACE\LVGL\lvgl\src\extra\widgets;.\INTERFACE\LVGL\lvgl\src\extra\themes\basic;.\INTERFACE\LVGL\lvgl\src\extra\libs\qrcode;.\HARDWARE\SYSTEM\sys;.\HARDWARE\SYSTEM\delay;.\HARDWARE\SYSTEM\usart;.\INTERFACE\LVGL;.\INTERFACE\UI;.\INTERFACE\UI\control;.\HARDWARE\TOUCH;..\VOR_V2.0\HARDWARE\c610;.\commuication\USB;.\commuication\USB\usb_drivers\inc;.\commuication\USB\usbd_class\cdc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1639,11 +1639,6 @@
               <FilePath>.\INTERFACE\UI\UI_Parameter\UI_Parameter_Cont.c</FilePath>
             </File>
             <File>
-              <FileName>UI_Parameter_Set.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\INTERFACE\UI\UI_Parameter\UI_Parameter_Set.c</FilePath>
-            </File>
-            <File>
               <FileName>UI_Parameter_Vor.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\INTERFACE\UI\UI_Parameter\UI_Parameter_Vor.c</FilePath>
@@ -1652,6 +1647,11 @@
               <FileName>UI_Parameter_Ovar.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\INTERFACE\UI\UI_Parameter\UI_Parameter_Ovar.c</FilePath>
+            </File>
+            <File>
+              <FileName>UI_Parameter_Set.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\INTERFACE\UI\UI_Parameter\UI_Parameter_Set.c</FilePath>
             </File>
             <File>
               <FileName>UI_Parameter_VHIT.c</FileName>
@@ -1750,6 +1750,51 @@
             </File>
           </Files>
         </Group>
+        <Group>
+          <GroupName>usb</GroupName>
+          <Files>
+            <File>
+              <FileName>cdc_class.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\commuication\USB\usbd_class\cdc\cdc_class.c</FilePath>
+            </File>
+            <File>
+              <FileName>cdc_desc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\commuication\USB\usbd_class\cdc\cdc_desc.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_init.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\commuication\USB\usb_init.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_int.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\commuication\USB\usb_drivers\src\usbd_int.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_sdr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\commuication\USB\usb_drivers\src\usbd_sdr.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\commuication\USB\usb_drivers\src\usbd_core.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\commuication\USB\usb_drivers\src\usb_core.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_conf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\commuication\USB\usb_conf.h</FilePath>
+            </File>
+          </Files>
+        </Group>
       </Groups>
     </Target>
   </Targets>
@@ -1759,5 +1804,14 @@
     <components/>
     <files/>
   </RTE>
+
+  <LayerInfo>
+    <Layers>
+      <Layer>
+        <LayName>VOR_V3</LayName>
+        <LayPrjMark>1</LayPrjMark>
+      </Layer>
+    </Layers>
+  </LayerInfo>
 
 </Project>

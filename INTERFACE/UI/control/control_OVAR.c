@@ -6,6 +6,7 @@
 #include "stdint.h"
 #define use_windows
 #ifndef ATM32F43_xx
+uint16_t adc1_ordinary_valuetab[2];
 #include "Windows.h"
 #include <stdio.h>
 #else
@@ -13,7 +14,7 @@
 #endif // use_windows
 // ÎÞUI¿ØÖÆ
 // ·µ»Ømessage
-
+extern uint16_t adc1_ordinary_valuetab[2];
 struct
 {
 	uint32_t time;
@@ -107,7 +108,8 @@ void Inc_handle(float angle)
 	{
 		float current_angle;
 		inc_flag = HAL_Incline_Get_State(&current_angle);
-		Ctrl_Msg_Printf("inc angle %d", (int)current_angle);
+		Ctrl_Msg_Printf("incline %d %d %d", (int)current_angle,adc1_ordinary_valuetab[0],
+			adc1_ordinary_valuetab[1]);
 		MYPRINTF("%.3f", current_angle);
 		SaftExitDelay(10, 0);
 		MYPRINTF("\r");

@@ -85,24 +85,28 @@ u16 BACK_COLOR = 0xFFFF;  // 背景色
 // 默认为竖屏
 _lcd_dev lcddev;
 
-//#define XMC_A6_SET
-//#define XMC_A6_CLR 
+// #define XMC_A6_SET
+ #define XMC_A6_CLR
 
-#define XMC_A6_SET                \
-	{                             \
-		__DSB();                  \
-		delay_us(1);              \
-		GPIOH->scr = GPIO_PINS_3; \
-		__DSB();                  \
-	}
+// #define XMC_A6_SET                \
+// 	{                             \
+// 		__DSB();                  \
+// 		delay_us(1);              \
+// 		GPIOH->scr = GPIO_PINS_3; \
+// 		__DSB();                  \
+// 	}
 
-#define XMC_A6_CLR                      \
-	{                                   \
-		__DSB();                        \
-		delay_us(1);                    \
-		GPIOH->scr = GPIO_PINS_3 << 16; \
-		__DSB();                        \
-	}
+// #define XMC_A6_CLR                      \
+// 	{                                   \
+// 		__DSB();                        \
+// 		delay_us(1);                    \
+// 		GPIOH->scr = GPIO_PINS_3 << 16; \
+// 		__DSB();                        \
+// 	}
+uint32_t delayct=200;
+#define XMC_A6_SET {uint32_t i=delayct; while(i--);}
+
+//#define XMC_A6_CLR delay_us(1);
 
 // 写寄存器函数
 // regval:寄存器值
@@ -831,7 +835,7 @@ void xmc_init(void)
 	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE13, GPIO_MUX_12);
 	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE14, GPIO_MUX_12);
 	gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE15, GPIO_MUX_12);
-  gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE12, GPIO_MUX_12);
+	gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE12, GPIO_MUX_12);
 
 	/* lcd data lines configuration */
 	gpio_init_struct.gpio_pins = GPIO_PINS_12;
@@ -840,8 +844,8 @@ void xmc_init(void)
 	gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
 	gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
 	gpio_init(GPIOG, &gpio_init_struct);
-  
-  	gpio_init_struct.gpio_pins = GPIO_PINS_12;
+
+	gpio_init_struct.gpio_pins = GPIO_PINS_12;
 	gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
 	gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
 	gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
@@ -897,18 +901,18 @@ void xmc_init(void)
 	xmc_norsram_timing_default_para_init(&rw_timing_struct, &w_timing_struct);
 	rw_timing_struct.subbank = XMC_BANK1_NOR_SRAM4;
 	rw_timing_struct.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
-	rw_timing_struct.addr_setup_time = 0xF;
+	rw_timing_struct.addr_setup_time = 20;
 	rw_timing_struct.addr_hold_time = 0x0;
-	rw_timing_struct.data_setup_time = 60;
+	rw_timing_struct.data_setup_time = 20;
 	rw_timing_struct.bus_latency_time = 0x0;
 	rw_timing_struct.clk_psc = 0x0;
 	rw_timing_struct.data_latency_time = 0x0;
 	rw_timing_struct.mode = XMC_ACCESS_MODE_A;
 	w_timing_struct.subbank = XMC_BANK1_NOR_SRAM4;
 	w_timing_struct.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
-	w_timing_struct.addr_setup_time = 0x9;
+	w_timing_struct.addr_setup_time = 20;
 	w_timing_struct.addr_hold_time = 0x0;
-	w_timing_struct.data_setup_time = 0x8;
+	w_timing_struct.data_setup_time = 20;
 	w_timing_struct.bus_latency_time = 0x0;
 	w_timing_struct.clk_psc = 0x0;
 	w_timing_struct.data_latency_time = 0x0;
@@ -926,13 +930,17 @@ void LCD_Init(void)
 	vu32 i = 0;
 	xmc_init();
 	LCD_DMA_Init();
-	Reset_H
-		delay_ms(1);
+	for(i=0;i<5;i++)
+	{
+			Reset_H
+		delay_ms(100);
 	Reset_L
-		delay_ms(1);
+		delay_ms(100);
 	Reset_H
+	}
+i=0;
 
-		delay_ms(50); // delay 50 ms
+		delay_ms(300); // delay 50 ms
 	LCD_WriteReg(0x0000, 0x0001);
 	delay_ms(50); // delay 50 ms
 	lcddev.id = LCD_ReadReg(0x0000);
@@ -989,30 +997,30 @@ void LCD_Init(void)
 	}
 	if (lcddev.id == 0X9341 || lcddev.id == 0X5310 || lcddev.id == 0X5510 || lcddev.id == 0X1963) // 如果是这几个IC,则设置WR时序为最快
 	{
-		// 使用AT32 XMC写时序配置：ADDR_SETUP=3，DATA_SETUP=2（保持读时序不变）
-		xmc_norsram_timing_init_type rw_t, w_t;
-		xmc_norsram_timing_default_para_init(&rw_t, &w_t);
-		rw_t.subbank = XMC_BANK1_NOR_SRAM4;
-		rw_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
-		rw_t.addr_setup_time = 0x20; // 保持与xmc_init一致
-		rw_t.addr_hold_time = 0x0;
-		rw_t.data_setup_time = 0x20; // 保持与xmc_init一致
-		rw_t.bus_latency_time = 0x0;
-		rw_t.clk_psc = 0x0;
-		rw_t.data_latency_time = 0x0;
-		rw_t.mode = XMC_ACCESS_MODE_A;
+		// // 使用AT32 XMC写时序配置：ADDR_SETUP=3，DATA_SETUP=2（保持读时序不变）
+		// xmc_norsram_timing_init_type rw_t, w_t;
+		// xmc_norsram_timing_default_para_init(&rw_t, &w_t);
+		// rw_t.subbank = XMC_BANK1_NOR_SRAM4;
+		// rw_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
+		// rw_t.addr_setup_time = 0x20; // 保持与xmc_init一致
+		// rw_t.addr_hold_time = 0x0;
+		// rw_t.data_setup_time = 0x20; // 保持与xmc_init一致
+		// rw_t.bus_latency_time = 0x0;
+		// rw_t.clk_psc = 0x0;
+		// rw_t.data_latency_time = 0x0;
+		// rw_t.mode = XMC_ACCESS_MODE_A;
 
-		w_t.subbank = XMC_BANK1_NOR_SRAM4;
-		w_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
-		w_t.addr_setup_time = 0x30; // 3个HCLK
-		w_t.addr_hold_time = 0x0;
-		w_t.data_setup_time = 0x20; // 2个HCLK
-		w_t.bus_latency_time = 0x0;
-		w_t.clk_psc = 0x0;
-		w_t.data_latency_time = 0x0;
-		w_t.mode = XMC_ACCESS_MODE_A;
+		// w_t.subbank = XMC_BANK1_NOR_SRAM4;
+		// w_t.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
+		// w_t.addr_setup_time = 0x30; // 3个HCLK
+		// w_t.addr_hold_time = 0x0;
+		// w_t.data_setup_time = 0x20; // 2个HCLK
+		// w_t.bus_latency_time = 0x0;
+		// w_t.clk_psc = 0x0;
+		// w_t.data_latency_time = 0x0;
+		// w_t.mode = XMC_ACCESS_MODE_A;
 
-		xmc_nor_sram_timing_config(&rw_t, &w_t);
+		// xmc_nor_sram_timing_config(&rw_t, &w_t);
 	}
 	else if (lcddev.id == 0X6804 || lcddev.id == 0XC505) // 6804/C505速度上不去,得降低
 	{
@@ -2969,6 +2977,7 @@ void LCD_Init(void)
 	LCD_Display_Dir(0); // 默认为竖屏
 	LCD_LED = 1;		// 点亮背光
 	LCD_Clear(WHITE);
+	delayct=20;
 }
 // 清屏函数
 // color:要清屏的填充色

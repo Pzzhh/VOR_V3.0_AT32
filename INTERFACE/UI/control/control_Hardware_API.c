@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-25 14:38:08
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-10-11 10:29:19
+ * @LastEditTime: 2025-11-14 16:14:48
  * @FilePath: \USER  d:\workfile\项目3 vor\software\VOR_V2.0\INTERFACE\UI\control\control_Hardware_API.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -197,8 +197,18 @@ uint8_t HAL_CAM_SET_Led_Voltage(uint16_t Millivol)
 #ifdef ATM32F43_xx
 	const uint8_t CAN_CAM_MSG[8] = {
 		02, vol[0], vol[1], 0, 0, 0, 0, 0};
-	res = can_send_msg(0x00, (uint8_t *)CAN_CAM_MSG, 8); // can_send reture 1->fail 0->success
-	res = (res == 1) ? 0 : 1;							 // exchange reture 1->success 0->fail
+	uint8_t wait = 10;
+	while (wait--)
+	{
+		res = can_send_msg(0x00, (uint8_t *)CAN_CAM_MSG, 8); // can_send reture 1->fail 0->success
+															 /* code */
+		if (res == 1)
+			break;
+		delay_ms(1);
+	}
+
+	//res = (res == 1) ? 0 : 1; // exchange reture 1->success 0->fail
+	res = wait;
 #endif
 	return res;
 }
@@ -259,7 +269,11 @@ void HAL_GET_SYSINFO(char *str)
 	sn[0] = *(uint32_t *)0x1FFF7A10;
 	sn[1] = *(uint32_t *)0x1FFF7A14;
 	sn[2] = *(uint32_t *)0x1FFF7A18;
-	sprintf(str, "V2.%d.%d Beta \tSN:%.8x", Version_NUMBER_Major, Version_NUMBERB, sn[1]);
+	uint8_t isDebuggerConnected = *((uint32_t *)0xE000EDF0) & 1;
+	if (isDebuggerConnected)
+		sprintf(str, "V2.%d.%d Debug\tSN:%.8x", Version_NUMBER_Major, Version_NUMBERB, sn[1]);
+	else
+		sprintf(str, "V2.%d.%d Beta \tSN:%.8x", Version_NUMBER_Major, Version_NUMBERB, sn[1]);
 	return;
 #endif
 	sprintf(str, "V2.1.%d \tSN:%.8x", Version_NUMBER_Major, 0x550);
@@ -417,7 +431,7 @@ uint8_t HAL_TIME_Get(timetyped *time)
 #else
 	SYSTEMTIME st;
 	GetLocalTime(&st);
-	simtime.date.year = st.wYear;
+	simtime.date.year = st.wYear+1;
 	simtime.date.month = st.wMonth;
 	simtime.date.date = st.wDay;
 	simtime.date.hour = st.wHour;
@@ -809,8 +823,9 @@ uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t *buffer, uint32_t size)
 	{
 		if (size == 0)
 		{
-			memset(&buf[0], 0, 5);
-			return 0;
+			memset(&buf[0], 0,EROM_MAP_info_pS);
+			M24C64_Write_Byte(ID * EROM_MAP_info_pS + EROM_MAP_info_base, buf, EROM_MAP_info_pS);
+			goto out;
 		}
 		memcpy(&buf[2], buffer, size);
 		buf[0] = ID;
@@ -822,6 +837,7 @@ uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t *buffer, uint32_t size)
 		M24C64_Write_Byte(ID * EROM_MAP_info_pS + EROM_MAP_info_base, buf, EROM_MAP_info_pS);
 		res = 1;
 	}
+	out:
 	message_free(buf);
 	return res;
 #endif
@@ -829,12 +845,16 @@ uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t *buffer, uint32_t size)
 
 void HAL_EROM_Init(void)
 {
+#ifdef ATM32F43_xx
 	ER_IIC_Init();
+#endif
 }
 
 void HAL_Motor_init(void)
 {
+#ifdef ATM32F43_xx
 	motor_init();
+#endif
 }
 
 uint8_t HAL_API_INIT(void)
@@ -848,9 +868,11 @@ uint8_t HAL_API_INIT(void)
 	if (res == 1) // loss power
 	{
 		uint8_t buf[32] = {0};
-		HAL_CONFIG_WRITE(3, buf, sizeof(buf)-3);
+		HAL_CONFIG_WRITE(3, buf, sizeof(buf) - 3);
 	}
 	HAL_Random_INIT();
-	 RNG_Generate();
+#ifdef ATM32F43_xx
+	RNG_Generate();
+#endif
 	return 0;
 }

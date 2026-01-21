@@ -103,21 +103,21 @@ UI_Parameter_Handler Continue_init(lv_obj_t* parent, int16_t x, int16_t y)
 	lv_obj_align(Obj.Vel.btn1_CW_label2, LV_ALIGN_CENTER, 0, 0);
 	lv_obj_align_to(Obj.Vel.btn1_CW_Set, Obj.Vel.dropdown1, LV_ALIGN_OUT_RIGHT_MID, 15, 0);
 
-	//	UI_Dropdown_Struct dropdown_Vel_OKR = {
-	//	   .dropdown = Obj.Vel_OKR.dropdown1,
-	//	   .label = Obj.Vel_OKR.label1,
-	//	   .label_ofs_x = -14,
-	//	   .label_ofs_y = 0,
-	//	   .x = 50,
-	//	   .y = 60,
-	//	   .Item = Cont_VelItem,
-	//	   .parent = context_box,
-	//	   .handle = (myhander)handler,
-	//	   .Label_Str = "OKR"
-	//	};
-	//	Obj.Vel_OKR.dropdown_Vel_OKR = dropdown_Vel_OKR;
-	//	UI_DropDown_Init(&Obj.Vel_OKR.dropdown_Vel_OKR);
-	//	Obj.Vel_OKR.dropdown1 = Obj.Vel_OKR.dropdown_Vel_OKR.dropdown;
+		UI_Dropdown_Struct dropdown_Vel_OKR = {
+		   .dropdown = Obj.Vel_OKR.dropdown1,
+		   .label = Obj.Vel_OKR.label1,
+		   .label_ofs_x = -14,
+		   .label_ofs_y = 0,
+		   .x = 50,
+		   .y = 60,
+		   .Item = Cont_VelItem,
+		   .parent = context_box,
+		   .handle = (myhander)handler,
+		   .Label_Str = "OKR"
+		};
+		Obj.Vel_OKR.dropdown_Vel_OKR = dropdown_Vel_OKR;
+		UI_DropDown_Init(&Obj.Vel_OKR.dropdown_Vel_OKR);
+		Obj.Vel_OKR.dropdown1 = Obj.Vel_OKR.dropdown_Vel_OKR.dropdown;
 
 		//dir btn set
 	Obj.Vel_OKR.btn1_CW_Set = lv_btn_create(context_box);

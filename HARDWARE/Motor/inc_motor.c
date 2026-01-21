@@ -201,6 +201,7 @@ void Motor_Ctl_Set(int16_t motor1, int16_t motor2)
 //判断是否过流
 uint8_t overCurrent(void)
 {
+	uint8_t res=0;
   // 计算两个电机的电压（mv)和电流(A)
   float voltage1 = adc1_ordinary_valuetab[0] / 4096.0f * 3.3f * 1000.0f; // mV
   float voltage2 = adc1_ordinary_valuetab[1] / 4096.0f * 3.3f * 1000.0f; // mV
@@ -209,14 +210,16 @@ uint8_t overCurrent(void)
   float max_voltage = 65.0f; // mV
   float max_current = (max_voltage - 16.0f) / 48.0f; //A  
   //        //if (voltage1 >= max_voltage || voltage2 >= max_voltage)
-  if (current1 >= max_current || current2 >= max_current)
+  if (current1 >= max_current)
   { 
-  return 1;
+  res=1;
   }
-  else
-  {
-    return 0;
-  }
+	if(current2 >= max_current)
+	{
+		res|=2; 
+	}
+    return res;
+
 }
 
 void Motor_Ctl_Handle()

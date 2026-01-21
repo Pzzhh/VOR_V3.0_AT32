@@ -49,7 +49,7 @@ const lv_obj_class_t lv_keyboard_class = {
 static const char * const default_kb_map_lc[] = {"1#", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", LV_SYMBOL_BACKSPACE, "\n",
                                                  "ABC", "a", "s", "d", "f", "g", "h", "j", "k", "l", LV_SYMBOL_NEW_LINE, "\n",
                                                  "_", "-", "z", "x", "c", "v", "b", "n", "m", ".", ",", ":", "\n",
-                                                 LV_SYMBOL_KEYBOARD, LV_SYMBOL_LEFT, " ", LV_SYMBOL_RIGHT, LV_SYMBOL_OK, ""
+                                                 LV_SYMBOL_CLOSE, LV_SYMBOL_LEFT, " ", LV_SYMBOL_RIGHT, LV_SYMBOL_OK, ""
                                                 };
 
 static const lv_btnmatrix_ctrl_t default_kb_ctrl_lc_map[] = {
@@ -62,7 +62,7 @@ static const lv_btnmatrix_ctrl_t default_kb_ctrl_lc_map[] = {
 static const char * const default_kb_map_uc[] = {"1#", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", LV_SYMBOL_BACKSPACE, "\n",
                                                  "abc", "A", "S", "D", "F", "G", "H", "J", "K", "L", LV_SYMBOL_NEW_LINE, "\n",
                                                  "_", "-", "Z", "X", "C", "V", "B", "N", "M", ".", ",", ":", "\n",
-                                                 LV_SYMBOL_KEYBOARD, LV_SYMBOL_LEFT, " ", LV_SYMBOL_RIGHT, LV_SYMBOL_OK, ""
+                                                 LV_SYMBOL_CLOSE, LV_SYMBOL_LEFT, " ", LV_SYMBOL_RIGHT, LV_SYMBOL_OK, ""
                                                 };
 
 static const lv_btnmatrix_ctrl_t default_kb_ctrl_uc_map[] = {
@@ -75,7 +75,7 @@ static const lv_btnmatrix_ctrl_t default_kb_ctrl_uc_map[] = {
 static const char * const default_kb_map_spec[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", LV_SYMBOL_BACKSPACE, "\n",
                                                    "abc", "+", "-", "/", "*", "=", "%", "!", "?", "#", "<", ">", "\n",
                                                    "\\",  "@", "$", "(", ")", "{", "}", "[", "]", ";", "\"", "'", "\n",
-                                                   LV_SYMBOL_KEYBOARD, LV_SYMBOL_LEFT, " ", LV_SYMBOL_RIGHT, LV_SYMBOL_OK, ""
+                                                   LV_SYMBOL_CLOSE, LV_SYMBOL_LEFT, " ", LV_SYMBOL_RIGHT, LV_SYMBOL_OK, ""
                                                   };
 
 static const lv_btnmatrix_ctrl_t default_kb_ctrl_spec_map[] = {
@@ -300,7 +300,7 @@ void lv_keyboard_def_event_cb(lv_event_t * e)
         lv_keyboard_update_ctrl_map(obj);
         return;
     }
-    else if(strcmp(txt, LV_SYMBOL_CLOSE) == 0 || strcmp(txt, LV_SYMBOL_KEYBOARD) == 0) {
+    else if(strcmp(txt, LV_SYMBOL_CLOSE) == 0 || strcmp(txt, LV_SYMBOL_OK) == 0) {
         lv_res_t res = lv_event_send(obj, LV_EVENT_CANCEL, NULL);
         if(res != LV_RES_OK) return;
 

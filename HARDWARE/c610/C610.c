@@ -2,7 +2,7 @@
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-16 09:37:35
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
- * @LastEditTime: 2025-09-23 05:17:46
+ * @LastEditTime: 2025-11-20 14:53:31
  * @FilePath: \USERd:\workfile\项目11 robomaster\software\01 code\ovor\template\c610\C610.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE10
  */
@@ -11,7 +11,7 @@
 #include "../CAN/can.h"
 #include "at32f435_437.h"
 
-static motor_measure_t motor_chassis[7];
+motor_measure_t motor_chassis[7];
 extern struct data1 State;
 
 #define get_motor_measure(ptr, data)                                   \
@@ -80,7 +80,8 @@ int16_t C610_PID_CAL(C610_Pid *PID, motor_measure_t *m, float Speed)
 float C610_Set_Speed = 0;
 void Motor_Set_Speed(float speed)
 {
-    C610_Set_Speed = speed;
+    const float factor = -1;
+    C610_Set_Speed = factor * speed;
 }
 
 void Motor_Spd_Pid(void)

@@ -72,19 +72,21 @@ static lv_obj_t *create_switch(lv_obj_t *parent,
 	if (Message_Center_Read_prinft("Ctrl", msg, sizeof(msg),
 								   "Camere Vol %d", VolSet) == 0)
 	{
-		state = 0;
-		if (strlen(msg) > 0)
-		{
-			state = 1;
-		}
+		lv_obj_t *mbox1 = lv_msgbox_create(NULL, "error message",msg,0, true);
+		lv_obj_center(mbox1);
+//		state = 0;
+//		if (strlen(msg) > 0)
+//		{
+//			state = 1;
+//		}
 	}
 	if (state == 1)
 	{
-		lv_obj_t *mbox1 = lv_msgbox_create(NULL, "error message",
-										   (state == 1) ? "CMD FAIL" : (state == 2) ? "CAN connect FAIL"
-																					: "Reserved",
-										   0, true);
-		lv_obj_center(mbox1);
+//		lv_obj_t *mbox1 = lv_msgbox_create(NULL, "error message",
+//										   (state == 1) ? "CMD FAIL" : (state == 2) ? "CAN connect FAIL"
+//																					: "Reserved",
+//										   0, true);
+//		lv_obj_center(mbox1);
 	}
 }
 

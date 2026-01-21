@@ -1,4 +1,4 @@
-﻿/*
+/*
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-08-05 14:28:30
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
@@ -22,7 +22,13 @@ const char* OVAR_VelItem =
 "80/s";
 
 const char* OVAR_INCItem =
+"0\n"
+	"5\n"
+"10\n"
+"15\n"
 "17\n"
+"20\n"
+"25\n"
 "30";
 
 typedef struct
