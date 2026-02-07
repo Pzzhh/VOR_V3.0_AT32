@@ -1203,7 +1203,24 @@ void * lv_tlsf_realloc(lv_tlsf_t tlsf, void * ptr, size_t size)
     }
     else {
         block_header_t * block = block_from_ptr(ptr);
+        
+        /* 诊断：检查 block 头是否被破坏 */
+        size_t block_sz = block_size(block);
+        if(block_sz > 0xF000 || block_sz == 0) {
+            /* block size 异常（超过60KB或为0），说明块头被破坏 */
+            volatile uint32_t bad_ptr = (uint32_t)ptr;
+            volatile size_t bad_size = block_sz;
+            volatile size_t req_size = size;
+            (void)bad_ptr; (void)bad_size; (void)req_size;
+            while(1);  /* 停在这里，检查 ptr 是什么对象 */
+        }
+        
         block_header_t * next = block_next(block);
+        uint32_t nextaddr = (uint32_t)next;
+        if(nextaddr > 0x20060000 || nextaddr < 0x20000000)
+        {
+            while(1);
+        }
 
         const size_t cursize = block_size(block);
         const size_t combined = cursize + block_size(next) + block_header_overhead;

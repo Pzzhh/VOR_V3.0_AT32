@@ -280,6 +280,15 @@ bool lv_obj_is_layout_positioned(const lv_obj_t * obj)
     lv_obj_t * parent = lv_obj_get_parent(obj);
     if(parent == NULL) return false;
 
+    /* 调试：检查 parent 地址合法性 */
+    uint32_t parent_addr = (uint32_t)parent;
+    if(parent_addr < 0x20000000 || parent_addr > 0x20060000) {
+        volatile uint32_t bad_parent = parent_addr;
+        volatile uint32_t orig_obj = (uint32_t)obj;
+        (void)bad_parent; (void)orig_obj;
+        while(1);  /* parent 非法，停在这里 */
+    }
+
     uint32_t layout = lv_obj_get_style_layout(parent, LV_PART_MAIN);
     if(layout) return true;
     else return false;

@@ -10,7 +10,7 @@
 static char receiveBuf[50];
 static uint32_t HandleID;
 static uint8_t isbusy, isupdata = 1;
-const int MaxTaskCount = 8;
+const int MaxTaskCount = Task_ARY_MAX;
 
 #define task_ID "task"
 
@@ -544,11 +544,18 @@ void task_manager_thread()
 void Task_mangager_Init()
 {
 	static uint64_t taskhandle;
-	ControlThreadCreate(
+	thread_create(
 		task_manager_thread,
 		0,
 		&taskhandle,
+		750,
 		"task manager",
-		256);
+		5);
+	// ControlThreadCreate(
+	// 	task_manager_thread,
+	// 	0,
+	// 	&taskhandle,
+	// 	"task manager",
+	// 	256);
 	// Meassage_Center_Add(task_ID);
 }

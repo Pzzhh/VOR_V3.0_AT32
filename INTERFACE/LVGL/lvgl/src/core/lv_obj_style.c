@@ -222,6 +222,17 @@ void lv_obj_enable_style_refresh(bool en)
 
 lv_style_value_t lv_obj_get_style_prop(const lv_obj_t * obj, lv_part_t part, lv_style_prop_t prop)
 {
+    /* 调试：检测 obj 指针是否在合法 RAM 范围内 */
+    uint32_t obj_addr = (uint32_t)obj;
+    if(obj_addr < 0x20000000 || obj_addr > 0x20060000) {
+        /* obj 地址非法！停在这里，然后查看调用栈 */
+        volatile uint32_t bad_obj = obj_addr;
+        volatile lv_part_t bad_part = part;
+        volatile lv_style_prop_t bad_prop = prop;
+        (void)bad_obj; (void)bad_part; (void)bad_prop;
+        while(1);  /* 断在这里，检查调用栈 */
+    }
+    
     lv_style_value_t value_act;
     bool inheritable = lv_style_prop_has_flag(prop, LV_STYLE_PROP_INHERIT);
     lv_style_res_t found = LV_STYLE_RES_NOT_FOUND;

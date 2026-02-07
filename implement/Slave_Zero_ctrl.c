@@ -184,13 +184,13 @@ uint8_t Zero_Machine_Init(uint8_t isinit)
     zero_para.MillSecReq = 2000;
 #else
     memset(zero_para, 0, sizeof(zero_para));
-    // if (isinit)
-    // {
-    //     Slave1_Check_Encode_Angle();
-    //     IR_IO_Init();
-    //     Zero_Back_init(360, 30, 1);
-    // }
-    // else
+    if (isinit)
+    {
+        Slave1_Check_Encode_Angle();
+        IR_IO_Init();
+        Zero_Back_init(360, 30, 1);
+    }
+    else
     {
         zero_para.state = back;
         slave_Back_Zero_init();

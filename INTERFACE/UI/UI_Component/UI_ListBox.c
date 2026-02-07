@@ -1,6 +1,13 @@
 #include "UI_ListBox.h"
 #include "../other/list.h"
 
+/* ========== 调试用：记录创建的对象地址，用于 Keil 设置内存断点 ========== */
+/* 在 Keil Watch 窗口观察这些变量，获取要监控的地址 */
+volatile lv_obj_t* dbg_last_created_table = NULL;    // 最后创建的 table 对象
+volatile uint32_t  dbg_table_parent_addr = 0;         // table->parent 的地址 (用于设置写断点)
+volatile int       dbg_table_create_count = 0;        // 创建计数器
+/* ========================================================================= */
+
 // 声明一个新的静态事件处理函数
 static void listbox_container_event_handler(lv_event_t* e);
 
@@ -70,29 +77,28 @@ void UI_Table_Clean(List* head, int index, lv_obj_t* parent_)
 	{
 		Table_Property* Property = node->instant;
 		lv_obj_t* obj = Property->obj;
-		//lv_obj_style
+		
 		/* 
 		 * 修复：在删除对象或释放其属性之前，必须先显式地删除动画。
 		 * lv_anim_del 通过被动画化的变量(var)和执行回调(exec_cb)来查找并删除动画。
 		 * 在这里，'var' 就是 table 对象 'obj'。
 		 */
-			//lv_anim_wait
-		//lv_animimg_set_src
 		lv_anim_del(obj, anim_y_cb);
-		lv_style_reset(&Property->style);
+		
 		/* 
-		 * 现在动画已经停止，以下清理步骤是安全的。
-		 * Property->isremove 和 Property->anim->repeat_cnt = 0 的操作也就不再需要了。
+		 * 修复内存破坏问题：必须先从对象移除样式引用，再释放 style 内存。
+		 * 之前的顺序是先 lv_style_reset 再 lv_obj_remove_style，这会导致
+		 * lv_obj_remove_style 或 lv_obj_del 访问已释放的 style->v_p.values_and_props
 		 */
-		lv_obj_remove_style(obj, NULL, LV_PART_ANY | LV_STATE_ANY);
+		lv_obj_remove_style(obj, NULL, LV_PART_ANY | LV_STATE_ANY);  // 1. 先移除样式引用
+		lv_style_reset(&Property->style);                            // 2. 再释放 style 内部内存
+		
 		lv_obj_del(obj);
 		head->_free(Property);
 		removeNode(head, node->data);
 		ID_UPdata(head);
 
 		LV_LOG_USER("\r\nremove Index addr %x", Property->obj);
-		////head->_free(Property);
-		//removeNode(head, node->data);
 	}
 }
 
@@ -324,6 +330,21 @@ lv_obj_t* UI_Table_Create(Table_Contain_Property* table_Contain_Property, void* 
 	table_proprity->set_clearence = 75;
 	table_proprity->updata_cd = updata_cd;
 	table_proprity->isremove = 0;
+	
+	/* ========== 调试：记录对象地址用于 Keil 断点 ========== */
+	dbg_last_created_table = table;
+	dbg_table_parent_addr = (uint32_t)&(table->parent);  // parent 成员的地址
+	dbg_table_create_count++;
+	/* 
+	 * 在 Keil 中设置 Access Breakpoint:
+	 * 1. 进入调试模式后，在 Watch 窗口查看 dbg_table_parent_addr 的值
+	 * 2. Debug -> Breakpoints -> New (Access)
+	 * 3. Address: 填入 dbg_table_parent_addr 的值
+	 * 4. Size: 4, Type: Write
+	 * 这样当有任何代码修改 table->parent 时就会中断
+	 */
+	/* ======================================================= */
+	
 	/* if (*table_proprity->ID > 2)
 	 {
 		 table_proprity->pos_y = table_proprity->set_clearence * (*table_proprity->ID - 2);

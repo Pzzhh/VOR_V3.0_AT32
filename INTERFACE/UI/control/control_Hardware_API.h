@@ -27,6 +27,13 @@ extern "C"
         e->Rk3588_Flag.Rflag = Pause; \
     }
 
+#define Rk3588_Send_RecordStop                   \
+    {                                       \
+        e->Rk3588_Flag.Lflag = RecordStop; \
+        e->Rk3588_Flag.Rflag = RecordStop; \
+    }
+
+
 	typedef enum
 	{
 		Imp_finsih = 0,

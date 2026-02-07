@@ -30,7 +30,7 @@
 
 #include <stdarg.h>
 
-Task_Parameter_Struct TaskArray[10];
+Task_Parameter_Struct TaskArray[Task_ARY_MAX];
 typedef struct
 {
 	uint16_t currentTaskIndex;
@@ -93,7 +93,7 @@ void PrintfInfo(Task_Parameter_Struct* e, char* mousename, uint8_t LR)
 void RK3588_SendTaskInfo(uint16_t tasksize, uint8_t LR)
 {
 	Task_Parameter_Struct* e;
-	char* mousename = (char*)system_malloc(50);
+	char* mousename = (char*)malloc(50);
 	mousename[0] = 0;
 	HAL_Get_UI_MouseName(mousename, 50);
 	if (mousename[0] == 0)
@@ -106,6 +106,11 @@ void RK3588_SendTaskInfo(uint16_t tasksize, uint8_t LR)
 	//}
 	(LR) ? Rk3588_R_Printf("\r\n") : Rk3588_L_Printf("\r\n");
 	free(mousename);
+}
+
+void RK3588_RecordStop_Printf(uint8_t LR)
+{
+	(LR) ? Rk3588_R_Printf("recordingEnd") : Rk3588_L_Printf("recordingEnd");
 }
 
 void RK3588_End_Printf(uint8_t LR)
@@ -219,7 +224,7 @@ void Task_control_handler(Task_control_info* e)
 	e->State_Bit.isRun = 0;
 	e->State_Bit.WaitRk = 0;
 	Ctrl_Msg_Printf(" ");
-//	ZEROControlFunction(1);
+	//	ZEROControlFunction(1);
 	HAL_Beep_Enable(500);
 	// uint16_t len = 0;
 BEGIN_POS:
@@ -250,12 +255,22 @@ BEGIN_POS:
 	skip_loop = 0;
 
 	uint16_t task_size = e->taskCount;
-	Ctrl_Msg_Printf(" ");
-	HAL_Outage_Log(1,0);
-	ZEROControlFunction(1);
 	int i = 0;
-	if(e->StartWithIndex < task_size)
+	Ctrl_Msg_Printf(" ");
+	HAL_Outage_Log(1, 0);
+	if (e->StartWithIndex < task_size)
+	{
 		i = e->StartWithIndex;
+		e->StartWithIndex = 0;
+		if (i == 0)
+			ZEROControlFunction(1);
+	}
+	else
+	{
+		e->StartWithIndex = 0;
+		goto BEGIN_POS;
+	}
+
 	for (; i < task_size; i++)
 	{
 		HAL_Outage_Log(1, i);
@@ -287,6 +302,7 @@ BEGIN_POS:
 		default:
 			break;
 		}
+		Rk3588_Send_RecordStop;
 		e->State_Bit.isPause = 0;
 		if (e->Dev_Mode_Bit.Zero == 0)
 			ZEROControlFunction(0);
@@ -297,7 +313,7 @@ BEGIN_POS:
 				HAL_Beep_Enable(2000);
 				Message_Center_Send_prinft("page1", 0,
 					0,
-					"NoticeWifierror %d", e->Rk3588_Flag.WifiMsgFlag);
+					"NoticeWifierror %d %d", e->Rk3588_Flag.WifiMsgFlag, i);
 				skip_loop = 1;
 				break;
 			}
@@ -311,7 +327,7 @@ BEGIN_POS:
 
 	}
 	Ctrl_Msg_Printf("Centering");
-	HAL_Outage_Log(0,0);
+	HAL_Outage_Log(0, 0);
 	// len = sprintf(msg_buffer, "End");
 	// Message_Center_Send("PAGE1", 0, msg_buffer, len);
 	/*HAL_Set_UI_Page1_Msg("End");*/

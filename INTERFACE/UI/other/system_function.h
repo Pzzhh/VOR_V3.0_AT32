@@ -21,18 +21,24 @@
 extern "C"
 {
 #endif //
+#define Task_ARY_MAX 15
     void EnterCrital(void);
     void ExitCrital(void);
+    #define system_malloc malloc
+
+    // void* system_malloc(size_t size);
+    // void* message_malloc(size_t size);
 
     void ControlDelay(uint32_t ms);
     void SaftExitDelay(uint32_t ms, uint8_t e);
     uint32_t ControlGetTick();
     void OutputDebugPrintf(const char *strOutputString, ...);
-    long ControlThreadCreate(void *function,     // set thread code
-                             void *e,            // set parameter
-                             void *taskhandle_t, // thread instant
-                             const char *name,   // thread name
-                             uint16_t sizeofstack);
+    // long ControlThreadCreate(void *function,     // set thread code
+    //                          void *e,            // set parameter
+    //                          void *taskhandle_t, // thread instant
+    //                          const char *name,   // thread name
+    //                          uint16_t sizeofstack);
+    void thread_create(void *function, void *e, void *control_thread, int sizeofstack, const char *name, int priority);
 #ifdef __cplusplus
 }
 #endif //

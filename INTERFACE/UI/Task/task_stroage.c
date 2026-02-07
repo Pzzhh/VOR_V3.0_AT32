@@ -193,10 +193,10 @@ void Task_Stroage_handle(void)
 // 初始化
 void Task_Stroage_Init()
 {
-	List *list = (List *)system_malloc(sizeof(List));
+	List *list = (List *)malloc(sizeof(List));
 	/// memset(list, 0, sizeof(List));
 	List_init(list);
 	list->_free = free;
-	list->_malloc = system_malloc;
+	list->_malloc = malloc;
 	task.list = (List_Task_Stroage *)list;
 }

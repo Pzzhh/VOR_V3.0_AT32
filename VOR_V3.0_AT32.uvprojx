@@ -305,15 +305,15 @@
               </OCR_RVCT9>
               <OCR_RVCT10>
                 <Type>0</Type>
-                <StartAddress>0x0</StartAddress>
-                <Size>0x0</Size>
+                <StartAddress>0x2005ff0</StartAddress>
+                <Size>0x1000</Size>
               </OCR_RVCT10>
             </OnChipMemories>
             <RvctStartVector></RvctStartVector>
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>4</Optim>
+            <Optim>0</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>1</OneElfS>
@@ -337,7 +337,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>AT32F435ZMT7,USE_STDPERIPH_DRIVER,AT_START_F435_V1,ATM32F43_xx</Define>
+              <Define>AT32F435ZMT7,USE_STDPERIPH_DRIVER,AT_START_F435_V1,ATM32F43_xx,Task_ARY_MAX=15</Define>
               <Undefine></Undefine>
               <IncludePath>.\libraries\drivers\inc;.\inc;.\libraries\cmsis\cm4\core_support;.\libraries\cmsis\cm4\device_support;.\middleLib\freertos\source\include;.\middleLib\freertos\source\portable\memmang;.\middleLib\freertos\source\portable\rvds\ARM_CM4F;.\cfg;.\HARDWARE\SYSTEM\delay;.\HARDWARE\LCD;.\HARDWARE\TOUCH;.\INTERFACE\LVGL\lvgl;.\INTERFACE\LVGL\lvgl\lsrc;.\INTERFACE\LVGL\lvgl\src\core;.\INTERFACE\LVGL\lvgl\src\draw;.\INTERFACE\LVGL\lvgl\src\font;.\INTERFACE\LVGL\lvgl\src\hal;.\INTERFACE\LVGL\lvgl\src\misc;.\INTERFACE\LVGL\lvgl\src\theme;.\INTERFACE\LVGL\lvgl\src\widgets;.\INTERFACE\LVGL\lvgl\src\extra;.\INTERFACE\LVGL\lvgl\src\extra\layouts;.\INTERFACE\LVGL\lvgl\src\extra\layout\flex;.\INTERFACE\LVGL\lv_port;.\INTERFACE\LVGL\lvgl\src\extra\layouts\flex;.\INTERFACE\LVGL\lvgl\src\extra\layouts\grid;.\INTERFACE\LVGL\lvgl\src\extra\libs;.\INTERFACE\LVGL\lvgl\src\extra\others;.\INTERFACE\LVGL\lvgl\src\extra\themes;.\INTERFACE\LVGL\lvgl\src\extra\widgets;.\INTERFACE\LVGL\lvgl\src\extra\themes\basic;.\INTERFACE\LVGL\lvgl\src\extra\libs\qrcode;.\HARDWARE\SYSTEM\sys;.\HARDWARE\SYSTEM\delay;.\HARDWARE\SYSTEM\usart;.\INTERFACE\LVGL;.\INTERFACE\UI;.\INTERFACE\UI\control;.\HARDWARE\TOUCH;..\VOR_V2.0\HARDWARE\c610;.\commuication\USB;.\commuication\USB\usb_drivers\inc;.\commuication\USB\usbd_class\cdc</IncludePath>
             </VariousControls>

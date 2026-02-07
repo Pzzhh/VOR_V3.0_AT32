@@ -2978,7 +2978,7 @@ i=0;
 	LCD_LED = 1;		// 点亮背光
 	LCD_Clear(WHITE);
 	delayct=20;
-}
+ }
 // 清屏函数
 // color:要清屏的填充色
 void LCD_Clear(u16 color)
@@ -3002,6 +3002,7 @@ void LCD_Clear(u16 color)
 	for (index = 0; index < totalpoint; index++)
 	{
 		LCD->LCD_RAM = color;
+		delay_us(1);
 	}
 }
 // 在指定区域内填充单个颜色

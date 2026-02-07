@@ -65,6 +65,7 @@ extern "C"
 				SendTaskArray,
 				Cancel,
 				Pause,
+				RecordStop,
 			} Rk3588_Flag_Typed;
 			uint8_t Lflag;
 			uint8_t Rflag;

@@ -108,8 +108,8 @@ void Inc_handle(float angle)
 	{
 		float current_angle;
 		inc_flag = HAL_Incline_Get_State(&current_angle);
-		Ctrl_Msg_Printf("incline %d %d %d", (int)current_angle,adc1_ordinary_valuetab[0],
-			adc1_ordinary_valuetab[1]);
+		Ctrl_Msg_Printf("incline %d %d %d", (int)current_angle, adc1_ordinary_valuetab[0],
+						adc1_ordinary_valuetab[1]);
 		MYPRINTF("%.3f", current_angle);
 		SaftExitDelay(10, 0);
 		MYPRINTF("\r");
@@ -136,12 +136,12 @@ Pause_Resume:
 		OVAR_flag = hal_Slave_OVAR_Get_State(&count, &parcent);
 		if (LastCount != count && OVAR_flag == Imp_running)
 		{
-			Ctrl_Msg_Printf("%d OVAR Done:%d%%", e->currentCount+1, (int)parcent);
+			Ctrl_Msg_Printf("%d OVAR Done:%d%%", e->currentCount + 1, (int)parcent);
 			LastCount = count;
 		}
 		if (e->State_Bit.Exit) // for exit
 		{
-			Ctrl_Msg_Printf("%d:OVAR #A52A2A Terminated#", e->currentCount+1);
+			Ctrl_Msg_Printf("%d:OVAR #A52A2A Terminated#", e->currentCount + 1);
 			e->UI_para.state = taskTerminal;
 			hal_Slave_OVAR_Stop();
 		}
@@ -153,8 +153,8 @@ Pause_Resume:
 				HAL_Slave_OVAR_Pause(1);
 				HAL_CAM_REC_Set(0);
 				e->UI_para.state = taskPause;
-                Rk3588_Send_Pause;
-				Ctrl_Msg_Printf("%d:OVAR Pause", e->currentCount+1);
+				Rk3588_Send_Pause;
+				Ctrl_Msg_Printf("%d:OVAR Pause", e->currentCount + 1);
 				//				if (CamIsStop == 0)
 				//					HAL_CAM_REC_Set(1);
 				//				CamIsStop = 1;
@@ -163,7 +163,7 @@ Pause_Resume:
 			{
 				e->State_Bit.isPause = 0;
 				Task_Delay_Msg("Resume After %d", 5);
-				//e->UI_para.state = taskruning;
+				// e->UI_para.state = taskruning;
 				goto Pause_Resume;
 			}
 			e->State_Bit.reqPause = 0;
@@ -176,7 +176,7 @@ Pause_Resume:
 	}
 	if (e->State_Bit.Exit != 1)
 	{
-		Ctrl_Msg_Printf("%d:OVAR Done:100%%", e->currentCount+1);
+		Ctrl_Msg_Printf("%d:OVAR Done:100%%", e->currentCount + 1);
 	}
 	/*one sec for cam stop*/
 	SaftExitDelay(1000, 0);
@@ -198,10 +198,10 @@ uint8_t OvarControlFunction(Task_Parameter_Struct *task,
 	// Ö´ĞĞ²¿·Ö
 	MYPRINTF("\r\n");
 	e->UI_para.state = taskruning;
-	// Inc_handle(task->OVAR.Inc_Degree);
+	Inc_handle(task->OVAR.Inc_Degree);
 	motor_handle(task, e);
-
-	
+	if (isretract == 1 || e->State_Bit.Exit)
+		Inc_handle(0);
 	Ctrl_Msg_Printf("OVAR end ");
 	MYPRINTF("\r\n ovar end");
 	e->UI_para.state = taskend;

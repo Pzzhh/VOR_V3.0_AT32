@@ -8,12 +8,14 @@
 #ifdef ATM32F43_xx
 #include "FreeRTOS.h"
 #include "task.h"
+#include "control/control.h"
 #define USE_USB 1
 #define USE_BL 1
 #else
 #define USE_USB 0
 #define USE_BL 1
 #include "../serial/serialPort.h"
+#include "../INTERFACE/UI/control/control.h"
 #endif
 
 #ifndef ATM32F43_xx
@@ -42,7 +44,7 @@
 #include "mpu/jy60.h"
 #endif
 
-#include "control/control.h"
+
 
 extern Task_control_info control_info;
 

@@ -33,10 +33,17 @@ void communication_thread()
 uint32_t taskhand[2];
 void Communication_Init()
 {
-	ControlThreadCreate(
+	thread_create(
 		communication_thread,
 		0,
-		taskhand,
+		&taskhand[0],
+		750,
 		"communication",
-		256);
+		11);
+	// ControlThreadCreate(
+	// 	communication_thread,
+	// 	0,
+	// 	taskhand,
+	// 	"communication",
+	// 	256);
 }

@@ -60,6 +60,18 @@ void SaftExitDelay(uint32_t ms, uint8_t e)
 }
 
 
+// void* message_malloc(size_t size)
+// {
+// 	void* pt = malloc(size);
+// 	return pt;
+// }
+
+// void* system_malloc(size_t size)
+// {
+// 	void* pt = malloc(size);
+// 	return pt;
+// }
+
 uint32_t ControlGetTick()
 {
 #ifndef ATM32F43_xx
@@ -114,22 +126,48 @@ void OutputDebugPrintf(const char* strOutputString, ...)
 	isbusy = 0;
 }
 
-long ControlThreadCreate(void* function,     // set thread code
-	void* e,            // set parameter
-	void* taskhandle_t, // thread instant
-	const char* name,   // thread name
-	uint16_t sizeofstack)
+// long ControlThreadCreate(void* function,     // set thread code
+// 	void* e,            // set parameter
+// 	void* taskhandle_t, // thread instant
+// 	const char* name,   // thread name
+// 	uint16_t sizeofstack)
+// {
+// #ifndef ATM32F43_xx
+// 	HANDLE hThread;
+// 	DWORD dwThreadId;
+// 	hThread = CreateThread(NULL,         // 默�?�安全属�?
+// 		sizeofstack,  // 默�?�堆栈大�?
+// 		function,     // 线程函数
+// 		e,            // 传递给线程函数的参�?
+// 		0,            // 默�?�创建标�?
+// 		&dwThreadId); // 线程ID)
+
+// #else
+// 	//	static TaskHandle_t control_thread;
+// 	volatile BaseType_t res =
+// 		xTaskCreate((TaskFunction_t)function,
+// 			(const char*)name,
+// 			(uint16_t)sizeofstack,
+// 			(void*)e,
+// 			(UBaseType_t)5,
+// 			(TaskHandle_t*)&taskhandle_t);
+// 	return res;
+// #endif
+// 	return 0;
+// }
+
+
+void thread_create(void* function, void* e, void* control_thread, int sizeofstack,const char* name,int priority)
 {
 #ifndef ATM32F43_xx
 	HANDLE hThread;
 	DWORD dwThreadId;
-	hThread = CreateThread(NULL,         // 默�?�安全属�?
-		sizeofstack,  // 默�?�堆栈大�?
-		function,     // 线程函数
-		e,            // 传递给线程函数的参�?
-		0,            // 默�?�创建标�?
-		&dwThreadId); // 线程ID)
-
+	hThread = CreateThread(NULL,
+		0,
+		function,
+		e,
+		0,
+		&dwThreadId);
 #else
 	//	static TaskHandle_t control_thread;
 	volatile BaseType_t res =
@@ -137,9 +175,7 @@ long ControlThreadCreate(void* function,     // set thread code
 			(const char*)name,
 			(uint16_t)sizeofstack,
 			(void*)e,
-			(UBaseType_t)5,
-			(TaskHandle_t*)&taskhandle_t);
-	return res;
+			(UBaseType_t)priority,
+			(TaskHandle_t*)&control_thread);
 #endif
-	return 0;
 }

@@ -229,7 +229,7 @@ void Motor_Ctl_Handle()
 void motor_init(void)
 {
 	gpio_config();
-	adc_config();
+//	adc_config();
 	tmr_both_init();
 	Motor_Ctl_Set(0,0);
 }

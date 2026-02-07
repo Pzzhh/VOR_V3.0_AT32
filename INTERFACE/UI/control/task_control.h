@@ -19,6 +19,10 @@ extern "C"
 	uint8_t Task_control_Begin(Task_control_info *e);
 	uint8_t Task_control_ReqStop(Task_control_info* e);
 	uint8_t Task_control_ReqPause(Task_control_info* e);
+
+	void RK3588_RecordStop_Printf(uint8_t LR);
+	
+
 #define Rk3588_Send_Task_Array(n)                      \
 	{                                               \
 		n->Rk3588_Flag.Lflag = SendTaskArray; \

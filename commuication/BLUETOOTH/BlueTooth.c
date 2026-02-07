@@ -170,7 +170,7 @@ void ReturnSlaveState(void)
 			ReturnBytes_Package(returnbytes, sizeof(returnbytes));
 		}
 	}
-	message_free(str);
+	free(str);
 }
 
 DecodeFuntionReturn Decode_ReturnSlaveState_Cmd(uint8_t* bytes)
@@ -389,7 +389,7 @@ DecodeFuntionReturn Decode_OtherCmd(uint8_t* msg)
 		return Cmd_error;
 
 	const int RxMsgBufSize = 50;
-	char* RxMsg = message_malloc(RxMsgBufSize);
+	char* RxMsg =(void *) malloc(RxMsgBufSize);
 	memset(RxMsg, 0, RxMsgBufSize);
 	const char errorMsg[] = "errorMsg\r\n";
 	const char okMsg[] = "W OK\r\n";
@@ -414,7 +414,7 @@ DecodeFuntionReturn Decode_OtherCmd(uint8_t* msg)
 	if (RxMsgLen <= RxMsgBufSize - 2)
 		memcpy(&RxMsg[RxMsgLen], ")", 1);
 	SendCb(RxMsg, strlen(RxMsg));
-	message_free(RxMsg);
+	free(RxMsg);
 }
 
 uint8_t BLctrl_Vor_Para_pkg(char* msg, Task_Parameter_Struct* par)

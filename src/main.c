@@ -173,15 +173,16 @@ int main(void)
 
   // ...existing code...
   DFU_PowerUp_Detection();
-		delay_ms(3000);
+		delay_ms(1000);
   LCD_Init();
+	delay_ms(1000);
   //    WWDG_Init(0x7F, 0x5F, WWDG_Prescaler_8); // 初始化窗口看门狗，举例参数
   TaskHandle_t handle;
   xTaskCreate((TaskFunction_t)LVGL_HANDLER,
               (const char *)"Outside_motor",
               (uint16_t)8000,
               (void *)NULL,
-              (UBaseType_t)1,
+              (UBaseType_t)15,
               (TaskHandle_t *)&handle);
   vTaskStartScheduler();
 }

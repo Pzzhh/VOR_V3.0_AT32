@@ -638,6 +638,7 @@ int HAL_TaskStroage_Write(uint8_t id, Task_Parameter_Struct *e, uint8_t count)
 
 int HAL_Outage_Log(uint8_t flag, uint8_t TaskIndex)
 {
+	return 0;
 	uint8_t value[2] = {0};
 	if (flag)
 	{
@@ -745,7 +746,7 @@ int HAL_CONFIG_READ(uint8_t ID, uint8_t *buffer, uint32_t size)
 	int res = 0;
 	uint16_t crcValue;
 	// uint8_t *BKSbuf = (uint8_t *)0x40024000 + ID * 20;
-	uint8_t *BKSbuf = message_malloc(EROM_MAP_info_pS);
+	uint8_t *BKSbuf = (uint8_t *)malloc(EROM_MAP_info_pS);
 	if (BKSbuf == 0)
 		return 0;
 	M24C64_Read_Byte(ID * EROM_MAP_info_pS + EROM_MAP_info_base, BKSbuf, EROM_MAP_info_pS);
@@ -767,7 +768,7 @@ int HAL_CONFIG_READ(uint8_t ID, uint8_t *buffer, uint32_t size)
 			}
 		}
 	}
-	message_free(BKSbuf);
+	free(BKSbuf);
 	return res;
 #endif
 }
@@ -811,7 +812,7 @@ uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t *buffer, uint32_t size)
 #else
 	int res = 0;
 	uint16_t crcValue;
-	uint8_t *buf = (uint8_t *)message_malloc(EROM_MAP_info_pS);
+	uint8_t *buf = (uint8_t *)malloc(EROM_MAP_info_pS);
 	if (buf == 0)
 		return 0;
 	// uint8_t* buf = (uint8_t*)0x40024000 + ID * 20;
@@ -838,7 +839,7 @@ uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t *buffer, uint32_t size)
 		res = 1;
 	}
 	out:
-	message_free(buf);
+	free(buf);
 	return res;
 #endif
 }
