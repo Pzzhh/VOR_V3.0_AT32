@@ -26,7 +26,7 @@ typedef uint32_t TaskHandle_t;
 #endif
 // void thread_create(void* function, Task_control_info* e, TaskHandle_t* control_thread, uint16_t sizeofstack);
 TaskHandle_t task_ctrl_thread, contrl_thread;
-Task_control_info control_info = {0};
+Task_control_info control_info = { 0 };
 uint8_t inc_dir_g;
 uint8_t Uart_Test_Pass = 0, Uart_Test_Req = 0;
 
@@ -104,8 +104,8 @@ uint8_t Ctrl_Get_Strat_Cmd()
 	return cmd;
 }
 
-uint8_t Ctrl_Msg_Printf(const char *format,
-						...)
+uint8_t Ctrl_Msg_Printf(const char* format,
+	...)
 {
 	va_list args;
 	va_start(args, format);
@@ -114,8 +114,8 @@ uint8_t Ctrl_Msg_Printf(const char *format,
 	va_end(args);
 }
 
-uint8_t Ctrl_WifiMsg_Printf(const char *format,
-							...)
+uint8_t Ctrl_WifiMsg_Printf(const char* format,
+	...)
 {
 	va_list args;
 	va_start(args, format);
@@ -127,8 +127,8 @@ uint8_t Ctrl_WifiMsg_Printf(const char *format,
 uint8_t Ctrl_Save_Config()
 {
 	HAL_CONFIG_WRITE(0,
-					 (uint8_t *)&control_info.Dev_Mode_Bit.flag,
-					 sizeof(control_info.Dev_Mode_Bit.flag));
+		(uint8_t*)&control_info.Dev_Mode_Bit.flag,
+		sizeof(control_info.Dev_Mode_Bit.flag));
 }
 
 uint8_t Ctrl_Resume_Config()
@@ -138,8 +138,8 @@ uint8_t Ctrl_Resume_Config()
 	if (res != 0)
 	{
 		memcpy(&control_info.Dev_Mode_Bit.flag,
-			   buff,
-			   sizeof(control_info.Dev_Mode_Bit.flag));
+			buff,
+			sizeof(control_info.Dev_Mode_Bit.flag));
 	}
 	if (control_info.Dev_Mode_Bit.UARTMODE == 2)
 		control_info.Rk3588_Flag.isUsingBlock = 1;
@@ -150,9 +150,9 @@ uint8_t Ctrl_Resume_Config()
 	// inc_dir_g = 1;
 }
 
-char *GetRunState()
+char* GetRunState()
 {
-	static const char st_msg[][10] = {"init", "ready", "pre", "run", "terminal", "pause"};
+	static const char st_msg[][10] = { "init", "ready", "pre", "run", "terminal", "pause" };
 	if (control_info.State_Bit.H_init)
 	{
 		return "init"; // init
@@ -184,38 +184,38 @@ char *GetRunState()
 }
 
 // return 0 ->ok
-uint8_t Ctrl_Read_Ack(uint8_t *msg, uint16_t msg_size,
-					  uint8_t *src, uint16_t SrcSize)
+uint8_t Ctrl_Read_Ack(uint8_t* msg, uint16_t msg_size,
+	uint8_t* src, uint16_t SrcSize)
 {
 	if (Msg_COMPARE("ReqReadState", msg))
 	{
 		sprintf(src, "ReadState %d %d",
-				control_info.State_Bit.IsRunning, control_info.currentCount);
+			control_info.State_Bit.IsRunning, control_info.currentCount);
 		return 0;
 	}
 	if (Msg_COMPARE("GetRunInfo", msg))
 	{
 		sprintf(src, "RunInfo  %s %d",
-				GetRunState(), control_info.currentCount + 1);
+			GetRunState(), control_info.currentCount + 1);
 		return 0;
 	}
 	if (Msg_COMPARE("ReqTaskMsg", msg))
 	{
 		sprintf(src, "TaskMsg %s",
-				control_info.message);
+			control_info.message);
 		return 0;
 	}
 	if (Msg_COMPARE("ISCtrlInit", msg))
 	{
 		sprintf(src, "ISCtrlInit %d",
-				control_info.State2_Bit.H_init);
+			control_info.State2_Bit.H_init);
 		return 0;
 	}
 	if (Msg_COMPARE("IsInitFinish", msg))
 	{
 		if (src != 0 && SrcSize == sizeof(uint8_t))
 		{
-			uint8_t *flag = (uint8_t *)src;
+			uint8_t* flag = (uint8_t*)src;
 			flag[0] = control_info.State_Bit.powerUp;
 		}
 		return 0;
@@ -224,7 +224,7 @@ uint8_t Ctrl_Read_Ack(uint8_t *msg, uint16_t msg_size,
 	{
 		if (SrcSize == sizeof(uint32_t))
 		{
-			uint16_t *flag = (uint16_t *)src;
+			uint16_t* flag = (uint16_t*)src;
 			flag[0] = control_info.State_Bit.flag;
 			flag[1] = control_info.UI_para.state;
 		}
@@ -234,7 +234,7 @@ uint8_t Ctrl_Read_Ack(uint8_t *msg, uint16_t msg_size,
 	{
 
 		sprintf(src, "H_run_State %d",
-				control_info.State_Bit);
+			control_info.State_Bit);
 		return 0;
 	}
 	if (Msg_COMPARE("Msg?", msg))
@@ -259,7 +259,7 @@ uint8_t Ctrl_Read_Ack(uint8_t *msg, uint16_t msg_size,
 	{
 		if (SrcSize == sizeof(int))
 		{
-			int *value = (int *)src;
+			int* value = (int*)src;
 			if (value != 0)
 			{
 				control_info.isExpired = Verify_Check_isExpired();
@@ -271,7 +271,7 @@ uint8_t Ctrl_Read_Ack(uint8_t *msg, uint16_t msg_size,
 	{
 		if (SrcSize == sizeof(timetyped))
 		{
-			timetyped *t = (timetyped *)src;
+			timetyped* t = (timetyped*)src;
 			uint8_t res = Verify_get_license_Date(t);
 		}
 	}
@@ -280,15 +280,15 @@ uint8_t Ctrl_Read_Ack(uint8_t *msg, uint16_t msg_size,
 		if (SrcSize == sizeof(timetyped) &&
 			src != 0)
 		{
-			HAL_TIME_Get((timetyped *)src);
+			HAL_TIME_Get((timetyped*)src);
 		}
 	}
 
 	return 1;
 }
 
-uint8_t Ctrl_Write_Ack(uint8_t *msg, uint16_t msg_size,
-					   uint8_t *src, uint16_t SrcSize)
+uint8_t Ctrl_Write_Ack(uint8_t* msg, uint16_t msg_size,
+	uint8_t* src, uint16_t SrcSize)
 {
 	if (Msg_COMPARE("ReqShift", msg))
 	{
@@ -309,7 +309,7 @@ uint8_t Ctrl_Write_Ack(uint8_t *msg, uint16_t msg_size,
 	{
 		if (src != 0 && SrcSize == sizeof(uint8_t))
 		{
-			StartATindex = *(uint8_t *)src;
+			StartATindex = *(uint8_t*)src;
 			Start_Stop_Flag = StartCmdBegin;
 		}
 	}
@@ -319,9 +319,9 @@ uint8_t Ctrl_Write_Ack(uint8_t *msg, uint16_t msg_size,
 		if (SrcSize == sizeof(timetyped) &&
 			src != 0)
 		{
-			timetyped *t;
-			t = (timetyped *)src;
-			Verify_Set_Time((void *)t);
+			timetyped* t;
+			t = (timetyped*)src;
+			Verify_Set_Time((void*)t);
 		}
 	}
 	if (Msg_COMPARE("SetVaildTime", msg))
@@ -330,15 +330,15 @@ uint8_t Ctrl_Write_Ack(uint8_t *msg, uint16_t msg_size,
 		if (SrcSize == sizeof(uint8_t) &&
 			src != 0)
 		{
-			uint8_t *month = src;
+			uint8_t* month = src;
 			Verify_Set_Subscribe(*month);
 		}
 	}
 	return 0;
 }
 
-uint8_t Maintain_Service_Read_ack(uint8_t *msg, uint16_t msg_size,
-								  uint8_t *src, uint16_t SrcSize)
+uint8_t Maintain_Service_Read_ack(uint8_t* msg, uint16_t msg_size,
+	uint8_t* src, uint16_t SrcSize)
 {
 	if (Msg_COMPARE("Camere LED", msg))
 	{
@@ -413,7 +413,7 @@ uint8_t Maintain_Service_Read_ack(uint8_t *msg, uint16_t msg_size,
 	}
 	if (Msg_COMPARE("isOutage?", msg))
 	{
-		uint8_t value[2] = {0};
+		uint8_t value[2] = { 0 };
 		int res = HAL_Outage_Read(value, sizeof(value));
 		if (res)
 		{
@@ -423,7 +423,7 @@ uint8_t Maintain_Service_Read_ack(uint8_t *msg, uint16_t msg_size,
 	}
 	if (Msg_COMPARE("ReadOutageIndex", msg))
 	{
-		uint8_t value[2] = {0};
+		uint8_t value[2] = { 0 };
 		int res = HAL_Outage_Read(value, sizeof(value));
 		if (res)
 		{
@@ -435,7 +435,7 @@ uint8_t Maintain_Service_Read_ack(uint8_t *msg, uint16_t msg_size,
 	{
 		if (src != 0 && SrcSize == sizeof(timetyped))
 		{
-			Hal_Outage_time_Read((timetyped *)src);
+			Hal_Outage_time_Read((timetyped*)src);
 		}
 	}
 	if (Msg_COMPARE("task save", msg))
@@ -478,7 +478,7 @@ uint8_t Maintain_Service_Read_ack(uint8_t *msg, uint16_t msg_size,
 			if (value >= 0 && value <= 1)
 				control_info.Dev_Mode_Bit.LoopTest = value;
 		}
-		int *Returnvalue = (int *)src;
+		int* Returnvalue = (int*)src;
 		*Returnvalue = control_info.Dev_Mode_Bit.LoopTest;
 		return 0;
 	}
@@ -498,16 +498,16 @@ uint8_t Maintain_Service_Read_ack(uint8_t *msg, uint16_t msg_size,
 		}
 		if (src != 0)
 		{
-			int *Returnvalue = (int *)src;
+			int* Returnvalue = (int*)src;
 			*Returnvalue = control_info.Dev_Mode_Bit.UARTMODE;
 		}
 		return 0;
 	}
 	if (Msg_COMPARE("DEV TIME ", msg))
 	{
-		int value[6] = {0};
+		int value[6] = { 0 };
 		int res = sscanf(msg, "DEV TIME %d/%d/%d/%d/%d/%d", &value[0], &value[1], &value[2],
-						 &value[3], &value[4], &value[5]);
+			&value[3], &value[4], &value[5]);
 		if (res == 6)
 		{
 		}
@@ -525,7 +525,7 @@ uint8_t Maintain_Service_Read_ack(uint8_t *msg, uint16_t msg_size,
 	{
 		Uart_Test_Req = 1;
 		ControlDelay(100);
-		uint32_t *num = (uint32_t *)src;
+		uint32_t* num = (uint32_t*)src;
 		if (num != 0 && SrcSize == sizeof(uint32_t))
 		{
 			*num = Uart_Test_Pass;
@@ -549,11 +549,11 @@ uint8_t Maintain_Service_Read_ack(uint8_t *msg, uint16_t msg_size,
 	{
 #ifdef ATM32F43_xx
 		extern int C610SpdCompensetion;
-		uint64_t *num = (uint64_t *)src;
+		uint64_t* num = (uint64_t*)src;
 		*num = (uint64_t)&C610SpdCompensetion;
 #else
 		static int C610SpdCompensetion = 500;
-		uint64_t *num = (uint64_t *)src;
+		uint64_t* num = (uint64_t*)src;
 		*num = (uint64_t)&C610SpdCompensetion;
 
 #endif
@@ -561,7 +561,7 @@ uint8_t Maintain_Service_Read_ack(uint8_t *msg, uint16_t msg_size,
 	if (Msg_COMPARE("DEV C610 CONFIG", msg))
 	{
 		int ison = 0;
-		uint32_t *num = (uint32_t *)src;
+		uint32_t* num = (uint32_t*)src;
 
 		int res = sscanf(msg, "DEV C610 CONFIG %d", &ison);
 		if (res == 1)
@@ -577,7 +577,7 @@ uint8_t Maintain_Service_Read_ack(uint8_t *msg, uint16_t msg_size,
 	if (Msg_COMPARE("DEV Zero Disable", msg))
 	{
 		int ison = 0;
-		uint32_t *num = (uint32_t *)src;
+		uint32_t* num = (uint32_t*)src;
 
 		int res = sscanf(msg, "DEV Zero Disable %d", &ison);
 		if (res == 1)
@@ -603,20 +603,36 @@ uint8_t ctrlWaitRk3588()
 	return 0;
 }
 
-uint8_t Rk3588_Ack_Cmd_Handle(Task_control_info *e, uint8_t LR)
+uint8_t Rk3588_Ack_Cmd_Handle(Task_control_info* e, uint8_t LR)
 {
 	const uint16_t Rk_Ack_Expiration = 200; // 2000ms
 	static uint16_t Rk_Ack_CountL, Rk_Ack_CountR;
 	static uint8_t last_Rk3588_FlagL, last_Rk3588_FlagR;
-	uint16_t *Rk_Ack_Count = (LR) ? &Rk_Ack_CountL : &Rk_Ack_CountR;
-	uint8_t *last_Rk3588_Flag = (LR) ? &last_Rk3588_FlagL : &last_Rk3588_FlagR;
-	uint8_t *flag = (LR) ? &e->Rk3588_Flag.Lflag : &e->Rk3588_Flag.Rflag;
+	uint16_t* Rk_Ack_Count = (LR) ? &Rk_Ack_CountL : &Rk_Ack_CountR;
+	uint8_t* last_Rk3588_Flag = (LR) ? &last_Rk3588_FlagL : &last_Rk3588_FlagR;
+	uint8_t* flag = (LR) ? &e->Rk3588_Flag.Lflag : &e->Rk3588_Flag.Rflag;
+	uint8_t* ErrorCode = (LR) ? &e->Rk3588_Flag.LerrorCode : &e->Rk3588_Flag.RerrorCode;
 	static char message[50];
 	static char wifiNamestr[2][20];
 	static char ProcessInfoStr[2][20];
 	uint8_t res = (LR) ? Hal_Rk3588_R_Readarray(message) : Hal_Rk3588_L_Readarray(message);
 	if (res == 1)
 	{
+		if (Msg_COMPARE("status:", message))
+		{
+			int error_value = 0;
+			//memset(getstatus, 0, sizeof(getstatus));	
+			if (sscanf(message, "status:%d", &error_value) == 1)
+			{
+				HAL_USB_Log_Printf("[%d]Rk3588 %s status:%d %s\n", ControlGetTick(), (LR) ? "R" : "L", error_value,message);
+				if (error_value == 0)
+				{
+					e->Rk3588_Flag.WifiMsgFlag |= (LR) ? 2 : 1;
+				}
+				*ErrorCode = (uint8_t)error_value;
+			}
+			*flag = Rk3588_Uart_Idle;
+		}
 		if (Msg_COMPARE("ok", message))
 		{
 			//	if (*flag == SendTaskArray || *flag == Pause) // when send task array
@@ -633,30 +649,56 @@ uint8_t Rk3588_Ack_Cmd_Handle(Task_control_info *e, uint8_t LR)
 		if (Msg_COMPARE("DFU", message))
 		{
 			Message_Center_Read_prinft("Ctrl", 0, 0,
-									   "DFU");
+				"DFU");
 		}
 		if (Msg_COMPARE("FACTORY Reset", message))
 		{
 			Message_Center_Read_prinft("Ctrl", 0, 0,
-									   "FACTORY Reset");
+				"FACTORY Reset");
 		}
 		if (Msg_COMPARE("UART Test", message))
 		{
 			Uart_Test_Pass = (LR) ? (Uart_Test_Pass | 2) : (Uart_Test_Pass | 1);
 		}
+		if (Msg_COMPARE("reqtime", message))
+		{
+			// Remote requests current datetime ¡ª respond with datetime:YYYY-MM-DDTHH:MM:SS\n
+			extern uint8_t HAL_TIME_Get(timetyped *time);
+			timetyped t = { 0 };
+			HAL_TIME_Get(&t);
+			if (LR)
+				Rk3588_R_Printf("datetime:%04d-%02d-%02dT%02d:%02d:%02d\n",
+					t.date.year, t.date.month, t.date.date,
+					t.date.hour, t.date.min, t.date.sec);
+			else
+				Rk3588_L_Printf("datetime:%04d-%02d-%02dT%02d:%02d:%02d\n",
+					t.date.year, t.date.month, t.date.date,
+					t.date.hour, t.date.min, t.date.sec);
+			/*HAL_USB_Log_Printf("[%d]datetime sync -> %04d-%02d-%02dT%02d:%02d:%02d\n",
+				ControlGetTick(),
+				t.date.year, t.date.month, t.date.date,
+				t.date.hour, t.date.min, t.date.sec);*/
+		}
 		if (Msg_COMPARE("wifiname:", message))
 		{
 
-			char *wifistr = (LR) ? wifiNamestr[1] : wifiNamestr[0];
+			char* wifistr = (LR) ? wifiNamestr[1] : wifiNamestr[0];
 			sscanf(message, "wifiname:%s", wifistr);
 			Ctrl_WifiMsg_Printf("L:%s-R:%s", wifiNamestr[0], wifiNamestr[1]);
-			//	e->Rk3588_Flag.WifiMsgFlag |= (LR) ? 2 : 1;
-			e->Rk3588_Flag.WifiMsgFlag = 3;
+			e->Rk3588_Flag.WifiMsgFlag |= (LR) ? 2 : 1;
+			//e->Rk3588_Flag.WifiMsgFlag = 3;
 		}
 	}
 	if (*last_Rk3588_Flag != *flag)
 	{
 		*Rk_Ack_Count = 0;
+	}
+
+	if (*flag == ReqRKErrorStatus)
+	{
+		RK3588_ReqRkErrorStatus_Printf(LR);
+		*ErrorCode = 8;
+		*flag = Rk3588_Uart_Idle;
 	}
 
 	if (*flag == SendTaskArray)
@@ -665,7 +707,7 @@ uint8_t Rk3588_Ack_Cmd_Handle(Task_control_info *e, uint8_t LR)
 			*flag = 0;
 		if (*Rk_Ack_Count == 0)
 		{
-			char *wifistr = (LR) ? wifiNamestr[1] : wifiNamestr[0];
+			char* wifistr = (LR) ? wifiNamestr[1] : wifiNamestr[0];
 			wifistr[0] = 0;
 			Ctrl_WifiMsg_Printf("L:%s-R:%s", wifiNamestr[0], wifiNamestr[1]);
 			extern void RK3588_SendTaskInfo(uint16_t tasksize, uint8_t LR);
@@ -724,14 +766,14 @@ uint8_t Rk3588_Ack_Cmd_Handle(Task_control_info *e, uint8_t LR)
 	*last_Rk3588_Flag = *flag;
 }
 
-void Ctrl_info_Indicator(Task_control_info *e)
+void Ctrl_info_Indicator(Task_control_info* e)
 {
 	const int16_t timeout = 120;
 	static uint32_t count = 0;
 	uint32_t tickSec = ControlGetTick() / 1000;
 	// static uint8_t IntCount;
 	static int16_t countDown = 1;
-	const char dot[3][4] = {".", "..", "..."};
+	const char dot[3][4] = { ".", "..", "..." };
 	if (count == 0)
 		count = tickSec + 1;
 	if (countDown >= 0)
@@ -742,14 +784,14 @@ void Ctrl_info_Indicator(Task_control_info *e)
 		Ctrl_Msg_Printf("#228B22 Ready#");
 	if (e->State_Bit.powerUp)
 	{
-		char *msg = (countDown != -1) ? "#000000 Initializing# %03d" : (tickSec % 2 == 0) ? "#EA0000 Init timeout#"
-																						  : "Init timeout";
+		char* msg = (countDown != -1) ? "#000000 Initializing# %03d" : (tickSec % 2 == 0) ? "#EA0000 Init timeout#"
+			: "Init timeout";
 		Ctrl_Msg_Printf(msg, countDown);
 		if (countDown == 0)
 		{
 			countDown = -1;
 			Message_Center_Send_prinft("page1", 0, 0,
-									   "Init timeout");
+				"Init timeout");
 		}
 	}
 	if (e->State_Bit.WaitRk)
@@ -759,8 +801,8 @@ void Ctrl_info_Indicator(Task_control_info *e)
 	}
 	// IntCount = (IntCount >= 2) ? 0 : IntCount + 1;
 }
-void Ctrl_Vhit_Ack(uint8_t *msg, uint16_t msg_size,
-				   uint8_t *src, uint16_t SrcSize)
+void Ctrl_Vhit_Ack(uint8_t* msg, uint16_t msg_size,
+	uint8_t* src, uint16_t SrcSize)
 {
 	if (Msg_COMPARE("VHIT_Next_CMD", msg))
 	{
@@ -802,6 +844,12 @@ void controlfunction()
 	// control_info.isExpired = Verify_Check_isExpired();
 	control_info.State2_Bit.H_init = 1; // for ui sync
 	control_info.State_Bit.powerUp = 3;
+
+	// DateTime sync: send reqtime to remote on startup (protocol: remote replies datetime:YYYY-MM-DDTHH:MM:SS\n)
+	/*extern void Rk3588_R_Printf(const char* strOutputString, ...);
+	extern void Rk3588_L_Printf(const char* strOutputString, ...);
+	Rk3588_R_Printf("reqtime\n");
+	Rk3588_L_Printf("reqtime\n");*/
 	while (1)
 	{
 
@@ -867,15 +915,15 @@ void controlfunction()
 		}
 		Rk3588_Ack_Cmd_Handle(&control_info, 0);
 		Rk3588_Ack_Cmd_Handle(&control_info, 1); //(L) pc using com 1 stm32 using uart1
-												 //		if (control_info.Dev_Mode_Bit.Rkmask)
-												 //		{
-												 //			control_info.State_Bit.powerUp = 0;
-												 //			control_info.State_Bit.WaitRk = 0;
-												 //			control_info.Rk3588_Flag.Rflag = 0;
-												 //			control_info.Rk3588_Flag.Lflag = 0;
-												 //		}
-												 //		else
-												 //			control_info.Rk3588_Flag.Rflag = 0;
+		//		if (control_info.Dev_Mode_Bit.Rkmask)
+		//		{
+		//			control_info.State_Bit.powerUp = 0;
+		//			control_info.State_Bit.WaitRk = 0;
+		//			control_info.Rk3588_Flag.Rflag = 0;
+		//			control_info.Rk3588_Flag.Lflag = 0;
+		//		}
+		//		else
+		//			control_info.Rk3588_Flag.Rflag = 0;
 #endif
 		ControlDelay(10);
 		// e.ExitFlag = 1;

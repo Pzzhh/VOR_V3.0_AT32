@@ -663,7 +663,7 @@ void lv_example_menu_55(lv_obj_t *parent, lv_obj_t *obj)
 	btn = lv_list_add_btn(list1, LV_SYMBOL_SETTINGS, "Rec");
 	lv_obj_add_event_cb(btn,
 						Camera_Rec_sw_handle, LV_EVENT_CLICKED, NULL);
-	btn = lv_list_add_btn(list1, LV_SYMBOL_WIFI, "wifi");
+	btn = lv_list_add_btn(list1, LV_SYMBOL_WIFI, "pair");
 	lv_obj_add_event_cb(btn,
 						Camera_WIFI_btn_handle, LV_EVENT_CLICKED, NULL);
 	btn = lv_list_add_btn(list1, LV_SYMBOL_CHARGE, "IR led voltage\n");

@@ -66,10 +66,13 @@ extern "C"
 				Cancel,
 				Pause,
 				RecordStop,
+				ReqRKErrorStatus,
 			} Rk3588_Flag_Typed;
 			uint8_t Lflag;
 			uint8_t Rflag;
 			uint8_t isUsingBlock;
+			uint8_t LerrorCode;
+			uint8_t RerrorCode;
 			uint8_t WifiMsgFlag;		//l-> 01'b2 R->10'b2 
 			uint8_t isWifiCauseStop; 
 		} Rk3588_Flag;

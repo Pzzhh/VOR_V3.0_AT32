@@ -33,6 +33,11 @@ extern "C"
         e->Rk3588_Flag.Rflag = RecordStop; \
     }
 
+#define Rk3588_Send_ReqRkErrorStatus                     \
+	{                                               \
+		e->Rk3588_Flag.Lflag = ReqRKErrorStatus; \
+		e->Rk3588_Flag.Rflag = ReqRKErrorStatus; \
+	}
 
 	typedef enum
 	{

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * @Author: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @Date: 2024-07-22 16:00:07
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
@@ -46,8 +46,8 @@ void SpinBox_Init(UI_SpinBox_Struct* e)
 	lv_obj_t* spinbox = lv_spinbox_create(parent);
 
 	char* Label_Str = e->Label_Str;
-
-	lv_spinbox_set_value(spinbox, 1);
+	
+	lv_spinbox_set_value(spinbox, *e->SpinBox_Value);
 	lv_spinbox_set_range(spinbox, 1, 1000);
 	lv_spinbox_set_digit_format(spinbox, 4, 0);
 	lv_spinbox_step_prev(spinbox);

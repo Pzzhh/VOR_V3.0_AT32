@@ -33,6 +33,7 @@ typedef struct
     int32_t accTimer;
     uint8_t ReqPause;
     uint32_t MillSecReq;
+    float okr_last_Pos;
     Speed_Cal_Struct back;
 } Ovar_Machine_parameter;
 Ovar_Machine_parameter ovar_para;
@@ -40,7 +41,7 @@ Ovar_Machine_parameter ovar_para;
 // static float speeds = 0;
 
 void OVAR_Back_init(float tragetPos, float sps, float accMs);
-
+extern float Slave1_Get_Encode_Angle();
 static uint8_t motor_set(void)
 {
     uint8_t res;
@@ -61,6 +62,11 @@ static uint8_t motor_set(void)
         ovar_para.accTimer = (ovar_para.accTimer >= 1000) ? 1000 : ovar_para.accTimer + 1;
         ovar_para.Tick++;
         float factor = ovar_para.accTimer / 1000.0f;
+        // if(Slave1_Get_Encode_Angle())
+        // if (Slave1_Get_Encode_Angle())
+        // {
+        //     HAL_CAM_SET_sign_led();
+        // }
         factor = (factor > 1) ? 1 : factor;
         tim_f_sin_set(angle_step * ovar_para.vel * factor);
         if (ovar_para.Tick >= ovar_para.MillSecReq || ovar_para.ReqPause)
@@ -127,7 +133,7 @@ uint8_t OVAR_Machine_Init(float vel, uint32_t MillSec)
     ovar_para.MillSecReq = MillSec;
     ovar_para.Tick = 0;
     ovar_para.accTimer = 0;
-    ovar_para.state = running|IO_ready;
+    ovar_para.state = running | IO_ready;
     Slave1_Step_Generator_Init(50000, 10);
     Slave1_Set_Machine_Cb(OVAR_handler);
 #endif
@@ -136,6 +142,8 @@ uint8_t OVAR_Machine_Init(float vel, uint32_t MillSec)
 
 uint8_t OVAR_Machine_Stop(void)
 {
+    if (ovar_para.state == end)
+        return 0;
     ovar_para.state = back;
     return 0;
 }

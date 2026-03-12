@@ -131,6 +131,7 @@ Pause_Resume:
 	int32_t LastCount = -1;
 	uint32_t count, parcent;
 	e->State_Bit.reqPause = 0;
+	e->UI_para.state=taskruning;
 	/*waiting vor machine finish*/
 	while (VOR_machine_flag)
 	{
@@ -140,7 +141,7 @@ Pause_Resume:
 			Ctrl_Msg_Printf("%d:%s Done:%d%%", e->currentCount + 1, ModeStr(task), parcent);
 			LastCount = count;
 		}
-		if (e->State_Bit.Exit) // for exit
+		if (e->State_Bit.Exit&&e->UI_para.state != taskTerminal) // for exit
 		{
 			Ctrl_Msg_Printf("%d:%s #A52A2A Terminated#", e->currentCount + 1, ModeStr(task));
 			e->State_Bit.isPause = 0;

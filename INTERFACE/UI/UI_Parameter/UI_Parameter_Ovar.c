@@ -133,7 +133,7 @@ UI_Parameter_Handler OVAR_init(lv_obj_t* parent, int16_t x, int16_t y)
 
 	//dir btn set
 	Obj.Vel.btn1_CW_Set = lv_btn_create(context_box);
-	lv_obj_set_size(Obj.Vel.btn1_CW_Set, 40, 40);
+	lv_obj_set_size(Obj.Vel.btn1_CW_Set, 50, 50);
 	//label init
 	Obj.Vel.btn1_CW_label2 = lv_label_create(Obj.Vel.btn1_CW_Set);
 	lv_label_set_text(Obj.Vel.btn1_CW_label2, "CCW");
@@ -142,6 +142,7 @@ UI_Parameter_Handler OVAR_init(lv_obj_t* parent, int16_t x, int16_t y)
 
 	//btn is clicked change label text
 	lv_obj_add_event_cb(Obj.Vel.btn1_CW_Set, rotate_dir_buttum_handler, LV_EVENT_CLICKED, (void*)&Obj.Vel.CW_flag);
+	Obj.counter.value = 100;
 	UI_SpinBox_Struct e = {
 		.parent = Obj.Context_Box,
 		.label = Obj.counter.label1,
@@ -151,6 +152,10 @@ UI_Parameter_Handler OVAR_init(lv_obj_t* parent, int16_t x, int16_t y)
 		.y = -60,
 		.Label_Str = "Sec" };
 	SpinBox_Init(&e);
+
+	lv_dropdown_set_selected(Obj.Inc.dropdown1.dropdown, 4);
+	lv_dropdown_set_selected(Obj.Vel.dropdown1, 5);
+
 	return ui_Parameter_Handler;
 }
 

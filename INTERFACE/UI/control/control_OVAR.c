@@ -131,6 +131,7 @@ Pause_Resume:
 	uint32_t count, parcent;
 	uint8_t pauseFlag = 0, CamIsStop = 0;
 	e->State_Bit.reqPause = 0;
+	e->UI_para.state=taskruning;
 	while (OVAR_flag)
 	{
 		OVAR_flag = hal_Slave_OVAR_Get_State(&count, &parcent);
@@ -139,9 +140,10 @@ Pause_Resume:
 			Ctrl_Msg_Printf("%d OVAR Done:%d%%", e->currentCount + 1, (int)parcent);
 			LastCount = count;
 		}
-		if (e->State_Bit.Exit) // for exit
+		if (e->State_Bit.Exit&&e->UI_para.state != taskTerminal) // for exit
 		{
 			Ctrl_Msg_Printf("%d:OVAR #A52A2A Terminated#", e->currentCount + 1);
+			e->State_Bit.reqPause=0;
 			e->UI_para.state = taskTerminal;
 			hal_Slave_OVAR_Stop();
 		}

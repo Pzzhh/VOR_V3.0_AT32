@@ -68,6 +68,7 @@ static void handler(UI_Dropdown_Struct* e)
 
 
 
+
 static UI_Dropdown_Struct dropdown_Vel2, dropdown_vel2;
 static UI_parameter_VOR Obj;
 
@@ -102,6 +103,7 @@ UI_Parameter_Handler VOR_init(lv_obj_t* parent, int16_t x, int16_t y)
 	dropdown_Vel2 = dropdown_freq;
 	UI_DropDown_Init(&dropdown_Vel2);
 	Obj.Freq.dropdown1 = dropdown_Vel2.dropdown;
+	
 
 
 	UI_Dropdown_Struct dropdown_vel = {
@@ -119,6 +121,7 @@ UI_Parameter_Handler VOR_init(lv_obj_t* parent, int16_t x, int16_t y)
 	dropdown_vel2 = dropdown_vel;
 	UI_DropDown_Init(&dropdown_vel2);
 	Obj.Vel.dropdown1 = dropdown_vel2.dropdown;
+	
 
 	Obj.Vel.btn1_CW_Set = lv_btn_create(context_box);
 	lv_obj_add_flag(Obj.Vel.btn1_CW_Set, LV_OBJ_FLAG_HIDDEN);
@@ -153,6 +156,7 @@ UI_Parameter_Handler VOR_init(lv_obj_t* parent, int16_t x, int16_t y)
 
 	//btn is clicked change label text
 	lv_obj_add_event_cb(Obj.Vel.btn1_CW_Set, rotate_dir_buttum_handler, LV_EVENT_CLICKED, (void*)&Obj.Vel.CW_flag);
+	Obj.counter.value = 100;
 	UI_SpinBox_Struct e = {
 		 .parent = Obj.Context_Box,
 		.SpinBox_Value = &Obj.counter.value,
@@ -160,9 +164,13 @@ UI_Parameter_Handler VOR_init(lv_obj_t* parent, int16_t x, int16_t y)
 		.y = -60,
 		.Label_Str = "Count" };
 	SpinBox_Init(&e);
-
+	
 	Obj.counter.label1 = e.label;
 	Obj.counter.spinbox1 = e.spinbox;
+
+
+	lv_dropdown_set_selected(Obj.Vel.dropdown1, 5);
+	lv_dropdown_set_selected(Obj.Freq.dropdown1, 7);
 
 	return ui_Parameter_Handler;
 }

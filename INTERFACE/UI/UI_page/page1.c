@@ -85,6 +85,8 @@ struct
 	} Wifi_Error_Block_typed;
 	uint8_t Wifi_Error_Block;
 	uint8_t error_begin_at;
+	uint8_t LE;
+	uint8_t RE;
 } UI_Async_Flag;
 
 volatile VHIT_Next_Btn_Enable_CMD_Enum VHIT_Next_Btn_Enable_CMD;
@@ -645,8 +647,8 @@ MsgReadReturn UI_Page1_Recv_wifi_Block_Msg(uint8_t* msg, uint16_t msg_size,
 {
 	if (Msg_COMPARE("NoticeWifierror", msg))
 	{
-		int flag = 0, index = 0;
-		if (sscanf(msg, "NoticeWifierror %d %d", &flag, &index) == 2)
+		int flag = 0, index = 0, LE = 0, RE = 0;
+		if (sscanf(msg, "NoticeWifierror %d %d %d %d", &flag, &index, &LE, &RE) == 4)
 		{
 			// flag =3 -> all cam ok ->Wifi_Error_Block 0<- all ok
 			uint8_t Block = 0;
@@ -667,6 +669,8 @@ MsgReadReturn UI_Page1_Recv_wifi_Block_Msg(uint8_t* msg, uint16_t msg_size,
 			}
 			UI_Async_Flag.Wifi_Error_Block = Block;
 			UI_Async_Flag.error_begin_at = index;
+			UI_Async_Flag.LE = LE;
+			UI_Async_Flag.RE = RE;
 		}
 		return msg_match;
 	}
@@ -753,6 +757,8 @@ static void msgbox_WifiError_Resume_event_handler(lv_event_t* e) {
 			Message_Center_Send_prinft("Ctrl", &index, sizeof(uint8_t), "ReqStratWithIndex");
 		}
 		else if (btn_id == 1) {
+			index= UI_Async_Flag.error_begin_at;
+			Message_Center_Send_prinft("Ctrl", &index, sizeof(uint8_t), "ReqStratWithIndex");
 		}
 	}
 }
@@ -779,18 +785,42 @@ void UI_Page1_Btn_Refulsh()
 	count++;
 	if (UI_Async_Flag.Wifi_Error_Block != cam_ok)
 	{
-		static const char* btns[] = { "Restart", "Ignore", NULL };
+		//由于 串口处相反了。简单起见，从这里修改
+		static const char* ERROR_MESSAGES[] = {
+			"ok",
+			"Error 1 Timeout waiting for recording file",
+			"Error 2 Wait was cancelled before recording",
+			"Error 3 Camera may Record Before Test",
+			"Error 4 CAM FTP error",
+			"Error 5 Camera did not record",
+			"Error 6 WiFi is not connected",
+			"Error 7 Low disk space",
+			"Unknown Error",
+			"Embedded System Timeout"
+		};
+		static const char* btns[] = { "Next","Again", "Ignore", NULL};
 		// 修复：改为静态数组，避免每次调用都在栈上分配 80 字节
-		static const char errormsgT[4][40] = { "none", "check Right wifi\nError at %d", "check Left wifi\nError at %d", "check both wifi\nError at %d" };
-		char errormsgT_Print[50];
-		uint8_t startat = (UI_Async_Flag.error_begin_at);
+		static const char errormsgT[4][40] = { "none", "check Left camera \nError at Task %d", "check Right camera\nError at Task %d", "check both camera\nError at Task %d" };
+		static char errormsgT_Print[70];
+		uint8_t startat = (UI_Async_Flag.error_begin_at), LE = UI_Async_Flag.RE, RE = UI_Async_Flag.LE;
 		int index = UI_Async_Flag.Wifi_Error_Block;
 		index = (index > 4 || index < 0) ? 0 : index;
+		index = (index == 1)?2:(index == 2)?1:index; // 由于串口传过来的标志与实际显示的错误信息顺序不一致，这里进行调整
 		sprintf(errormsgT_Print, errormsgT[index], startat + 1);
 		//const char* erromsg = errormsgT[index];  // 修复：不需要强制转换
 		lv_obj_t* mbox1 = lv_msgbox_create(NULL, "error message",
 			errormsgT_Print,
 			btns, true);
+		lv_obj_set_width(mbox1, 500);
+		lv_obj_t* label = lv_label_create(mbox1); // 创建一个标签来显示错误信息
+		lv_obj_set_width(label, 480);
+		lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP); // 设置标签文本自动换行
+		LE = (LE > 9) ? 9 : LE;
+		RE = (RE > 9) ? 9 : RE;
+		if(index == 1&&LE == 0) LE = 9; // 如果左摄像头错误但没有错误代码，显示未知错误
+		if(index == 2&&RE == 0) RE = 9; // 如果
+			
+		lv_label_set_text_fmt(label, "Left\t:%s\nRight\t:%s", ERROR_MESSAGES[LE], ERROR_MESSAGES[RE]); // 设置标签文本为错误信息
 		lv_obj_add_event_cb(mbox1, msgbox_WifiError_Resume_event_handler, LV_EVENT_ALL, NULL);
 		lv_obj_center(mbox1);
 		UI_Async_Flag.Wifi_Error_Block = cam_ok;
@@ -1035,7 +1065,10 @@ void UI_Page1_user_Helper()
 		"1.Please ensure both side cameras are powered on and WiFi is configured.\n"
 		"2.Initialization may take up to 2 minutes.\n"
 		"3.Manual leveling is required after a power outage.\n"
-		"4.Stored tasks can be loaded in settings.",
+		"4.Stored tasks can be loaded in settings.\n"
+		"5.web access: \n"
+		" L: 192.168.31.11:5000 \n"
+	"  R: 192.168.31.10:5000 ",
 		NULL, true);
 	lv_obj_set_width(msgbox, 700);
 	lv_obj_center(msgbox);
