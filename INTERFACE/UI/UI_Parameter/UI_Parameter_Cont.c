@@ -3,7 +3,7 @@
 #include "../UI_Component/UI_SpinBox.h"
 #include "../UI_Component/UI_Dropdown.h"
 
-const char* Cont_VelItem = "5/s\n""10/s\n""20/s\n""30/s\n" "40/s\n""50/s\n""60/s\n""80/s";
+const char* Cont_VelItem = "0/s\n""5/s\n""10/s\n""20/s\n""30/s\n" "40/s\n""50/s\n""60/s\n""80/s";
 
 typedef struct
 {

@@ -136,7 +136,7 @@ void UI_Page_Management_Init()
 //	Verify_hardResetVaild();
 //	value = 0;
 #ifndef ATM32F43_xx
-	//value = 0;
+	//value = 1;
 #endif
 	switch (value)
 	{
