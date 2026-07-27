@@ -301,7 +301,6 @@ uint8_t HAL_Random_Create(void)
 #ifdef ATM32F43_xx
 	return RNG_Generate();
 #endif
-	srand(send);
 	return send;
 }
 

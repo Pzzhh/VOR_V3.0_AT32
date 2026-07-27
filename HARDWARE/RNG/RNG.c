@@ -20,5 +20,14 @@ extern uint16_t adc1_ordinary_valuetab[2];
 
 void RNG_Generate_Init(void)
 {
-    srand(adc1_ordinary_valuetab[0] + adc1_ordinary_valuetab[1]);
+    ertc_time_type rtc_time = {0};
+    uint32_t seed;
+
+    ertc_calendar_get(&rtc_time);
+
+    seed = ((uint32_t)adc1_ordinary_valuetab[0] << 16)
+         ^ (uint32_t)adc1_ordinary_valuetab[1]
+         ^ ((uint32_t)rtc_time.sec * 0x9E3779B9UL);
+
+    srand((unsigned int)seed);
 }

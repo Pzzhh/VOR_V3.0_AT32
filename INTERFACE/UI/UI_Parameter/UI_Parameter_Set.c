@@ -67,7 +67,7 @@ void Continue_init(lv_obj_t* parent)
 #endif
 #if 0
 #else
-const char* Set_item_OKR = "VOR\n""OKR\n""OVAR\n""CONT";
+const char* Set_item_OKR = "VOR\n""OKR\n""VOR+OKR\n""VOR+OKR*\n""OVAR\n""CONT";
 //const char* Set_item_No_OKR = "VOR\n""OVAR\n""CONT";
 const char* Set_item_No_OKR = "VOR\n""OVAR";
 #endif

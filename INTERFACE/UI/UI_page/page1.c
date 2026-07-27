@@ -794,9 +794,18 @@ void UI_Page1_Btn_Refulsh()
 			"Error 4 CAM FTP error",
 			"Error 5 Camera did not record",
 			"Error 6 WiFi is not connected",
-			"Error 7 Low disk space",
-			"Unknown Error",
-			"Embedded System Timeout"
+			"Error 7 File stored but low disk space",
+			"Error 8 Camera already recording or starting",
+			"Error 9 Camera port connect failed",
+			"Error 10  Camera port disconnected",
+			"Error 11 No response from camera after retries",
+			"Error 12 SD card abnormal",
+			"Error 13 Unknown Error",
+			"Error 14 Start command failed",
+			"Error 15 Camera status is not Recording",
+			"Error 16 Stop command failed",
+			"Error 17 Stop response missing video filename",
+			"Error 18 Start did not finish before stop"
 		};
 		static const char* btns[] = { "Next","Again", "Ignore", NULL};
 		// 修复：改为静态数组，避免每次调用都在栈上分配 80 字节
@@ -815,12 +824,13 @@ void UI_Page1_Btn_Refulsh()
 		lv_obj_t* label = lv_label_create(mbox1); // 创建一个标签来显示错误信息
 		lv_obj_set_width(label, 480);
 		lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP); // 设置标签文本自动换行
-		LE = (LE > 9) ? 9 : LE;
-		RE = (RE > 9) ? 9 : RE;
-		if(index == 1&&LE == 0) LE = 9; // 如果左摄像头错误但没有错误代码，显示未知错误
-		if(index == 2&&RE == 0) RE = 9; // 如果
+		const uint8_t error_message_count = sizeof(ERROR_MESSAGES) / sizeof(ERROR_MESSAGES[0]);
+		const char* left_error_message = (LE < error_message_count) ? ERROR_MESSAGES[LE] : "Unknown Error";
+		const char* right_error_message = (RE < error_message_count) ? ERROR_MESSAGES[RE] : "Unknown Error";
+		if(index == 1 && LE == 0) left_error_message = "Unknown Error"; // 左摄像头报错但未携带错误码
+		if(index == 2 && RE == 0) right_error_message = "Unknown Error"; // 右摄像头报错但未携带错误码
 			
-		lv_label_set_text_fmt(label, "Left\t:%s\nRight\t:%s", ERROR_MESSAGES[LE], ERROR_MESSAGES[RE]); // 设置标签文本为错误信息
+		lv_label_set_text_fmt(label, "Left\t:%s\nRight\t:%s", left_error_message, right_error_message); // 设置标签文本为错误信息
 		lv_obj_add_event_cb(mbox1, msgbox_WifiError_Resume_event_handler, LV_EVENT_ALL, NULL);
 		lv_obj_center(mbox1);
 		UI_Async_Flag.Wifi_Error_Block = cam_ok;
