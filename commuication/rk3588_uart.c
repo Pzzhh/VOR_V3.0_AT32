@@ -202,6 +202,6 @@ void Rk3588_Init(void)
 	USART1_INIT(115200, Rk3588_R_SerialBuffer);
 	USART6_INIT(115200, Rk3588_L_SerialBuffer);
 #else
-	SerialPort_Init(Rk3588_R_SerialBuffer, L"COM1");
+	//SerialPort_Init(Rk3588_R_SerialBuffer, L"COM1");
 #endif
 }

@@ -147,7 +147,7 @@ uint16_t Task_Stroage_GetArray(Task_Parameter_Struct *taskarray, uint16_t arrayS
 	List *head = (List *)task.list;
 	if (taskarray == 0 || arraySize == 0)
 		return 0;
-	while (1)
+	while (arrayWriteIndex < arraySize)
 	{
 		Node *node = FindNode(head, ID++);
 		if (node == 0)
@@ -193,7 +193,11 @@ void Task_Stroage_handle(void)
 // 初始化
 void Task_Stroage_Init()
 {
+	if (task.list != 0)
+		return;
 	List *list = (List *)malloc(sizeof(List));
+	if (list == 0)
+		return;
 	/// memset(list, 0, sizeof(List));
 	List_init(list);
 	list->_free = free;

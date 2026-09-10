@@ -3,8 +3,8 @@
  * @Date: 2024-07-24 10:26:50
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
  * @LastEditTime: 2025-03-28 20:02:31
- * @FilePath: \USERd:\workfile\ÏîÄ¿3 vor\software\VOR_V2.0\INTERFACE\UI\control\task_control.c
- * @Description: ÕâÊÇÄ¬ÈÏÉèÖÃ,ÇëÉèÖÃ`customMade`, ´ò¿ªkoroFileHeader²é¿´ÅäÖÃ ½øĞĞÉèÖÃ: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @FilePath: \USERd:\workfile\é¡¹ç›®3 vor\software\VOR_V2.0\INTERFACE\UI\control\task_control.c
+ * @Description: è¿™æ˜¯é»˜è®¤è®¾ç½®,è¯·è®¾ç½®`customMade`, æ‰“å¼€koroFileHeaderæŸ¥çœ‹é…ç½® è¿›è¡Œè®¾ç½®: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #include "task_control.h"
 #include "../other/system_function.h"
@@ -180,8 +180,8 @@ uint8_t Task_control_Begin(Task_control_info *e)
 	{
 		return 0;
 	}
-	e->taskCount = HAL_Task_GetArray(TaskArray, 10);
-	if (e->taskCount == 0 || e->taskCount > 20)
+	e->taskCount = HAL_Task_GetArray(TaskArray, Task_ARY_MAX);
+	if (e->taskCount == 0 || e->taskCount > Task_ARY_MAX)
 		return 0;
 	e->taskArray = TaskArray;
 	e->State_Bit.flag = 0;
@@ -191,7 +191,7 @@ uint8_t Task_control_Begin(Task_control_info *e)
 
 uint8_t Task_control_ReqStop(Task_control_info *e)
 {
-	if (e->State_Bit.IsRunning == 0)
+	if (e->State_Bit.IsRunning == 0 && e->State_Bit.isRun == 0)
 	{
 		return 0;
 	}

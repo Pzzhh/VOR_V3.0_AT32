@@ -305,6 +305,16 @@ uint8_t Ctrl_Write_Ack(uint8_t* msg, uint16_t msg_size,
 	{
 		Start_Stop_Flag = StartCmdStop;
 	}
+	if (Msg_COMPARE("ReqPause", msg))
+	{
+		if (control_info.State_Bit.IsRunning && !control_info.State_Bit.isPause)
+			Start_Stop_Flag = StartCmdPause;
+	}
+	if (Msg_COMPARE("ReqResume", msg))
+	{
+		if (control_info.State_Bit.IsRunning && control_info.State_Bit.isPause)
+			Start_Stop_Flag = StartCmdPause;
+	}
 	if (Msg_COMPARE("ReqStratWithIndex", msg))
 	{
 		if (src != 0 && SrcSize == sizeof(uint8_t))
@@ -386,7 +396,7 @@ uint8_t Maintain_Service_Read_ack(uint8_t* msg, uint16_t msg_size,
 		{
 			if (index < 4)
 			{
-				//ÕâÀïÓÐÎÊÌâ  
+				//è¿™é‡Œæœ‰é—®é¢˜  
 				static Task_Parameter_Struct TaskArray[10];
 				int r = sizeof(Task_Parameter_Struct);
 #ifdef ATM32F43_xx
@@ -662,7 +672,7 @@ uint8_t Rk3588_Ack_Cmd_Handle(Task_control_info* e, uint8_t LR)
 		}
 		if (Msg_COMPARE("reqtime", message))
 		{
-			// Remote requests current datetime ¡ª respond with datetime:YYYY-MM-DDTHH:MM:SS\n
+			// Remote requests current datetime â€” respond with datetime:YYYY-MM-DDTHH:MM:SS\n
 			extern uint8_t HAL_TIME_Get(timetyped *time);
 			timetyped t = { 0 };
 			HAL_TIME_Get(&t);
@@ -854,9 +864,23 @@ void controlfunction()
 	{
 
 		Ctrl_info_Indicator(&control_info);
+		/* Always consume safety commands. Previously STOP/PAUSE were only read
+		 * while isRun == 0, so an external stop could remain pending during an
+		 * active experiment. */
+		Startflag = Ctrl_Get_Strat_Cmd();
+		if (Startflag == StartCmdStop)
+		{
+			if (control_info.State_Bit.IsRunning || control_info.State_Bit.isRun)
+				Task_control_ReqStop(&control_info);
+			else if (control_info.State_Bit.powerUp != 0)
+				control_info.State_Bit.powerUp = 0;
+		}
+		else if (Startflag == StartCmdPause && control_info.State_Bit.IsRunning)
+		{
+			Task_control_ReqPause(&control_info);
+		}
 		if (control_info.State_Bit.isRun == 0)
 		{
-			Startflag = Ctrl_Get_Strat_Cmd();
 			if (control_info.State_Bit.WaitRk == 0 &&
 				control_info.State_Bit.powerUp == 0)
 			{
@@ -864,22 +888,6 @@ void controlfunction()
 				if (Startflag == StartCmdBegin)
 				{
 					Task_control_Begin(&control_info);
-				}
-				if (Startflag == StartCmdStop)
-				{
-					Task_control_ReqStop(&control_info);
-				}
-				if (Startflag == StartCmdPause)
-				{
-					Task_control_ReqPause(&control_info);
-				}
-			}
-			else
-			{
-				if (Startflag == StartCmdStop)
-				{
-					control_info.State_Bit.powerUp = 0;
-					// control_info.Dev_Mode_Bit.Rkmask = 1;
 				}
 			}
 		}

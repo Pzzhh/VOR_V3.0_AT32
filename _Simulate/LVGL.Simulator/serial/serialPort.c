@@ -8,7 +8,7 @@
 
 extern void OutputDebugPrintf(const char* strOutputString, ...);
 static   HANDLE hSerial = 0;
-static void (*Handle_cb)(uint8_t* dr);
+static void (*Handle_cb)(uint8_t dr);
 
 void SerialPort_SendBuf(uint8_t* buf, uint16_t len)
 {
@@ -22,15 +22,15 @@ void SerialPort_SendBuf(uint8_t* buf, uint16_t len)
 
     if (!WriteFile(hSerial, buf, len, &bytesWritten, NULL)) {
         CloseHandle(hSerial);
-        return 1;
+        return;
     }
 }
 
-void Serial_Thread(LPCWSTR comname)
+static DWORD WINAPI Serial_Thread(LPVOID parameter)
 {
-    STARTUPINFO si = { sizeof(si) };
+    LPCWSTR comname = (LPCWSTR)parameter;
     if (hSerial != 0)
-        return;
+        return 0;
 
     LPCWSTR portName = comname;
     hSerial = CreateFile(portName,
@@ -42,7 +42,8 @@ void Serial_Thread(LPCWSTR comname)
         0);
     if (hSerial == INVALID_HANDLE_VALUE) {
         OutputDebugPrintf("Error opening serial port\n");
-        return;
+        hSerial = 0;
+        return 0;
     }
 
     DCB dcbSerialParams = { 0 };
@@ -51,7 +52,8 @@ void Serial_Thread(LPCWSTR comname)
     if (!GetCommState(hSerial, &dcbSerialParams)) {
         OutputDebugPrintf("Error getting state\n");
         CloseHandle(hSerial);
-        return;
+        hSerial = 0;
+        return 0;
     }
 
     dcbSerialParams.BaudRate = CBR_9600;
@@ -62,7 +64,8 @@ void Serial_Thread(LPCWSTR comname)
     if (!SetCommState(hSerial, &dcbSerialParams)) {
         OutputDebugPrintf("Error setting serial port state\n");
         CloseHandle(hSerial);
-        return;
+        hSerial = 0;
+        return 0;
     }
 
     COMMTIMEOUTS timeouts = { 0 };
@@ -75,11 +78,10 @@ void Serial_Thread(LPCWSTR comname)
     if (!SetCommTimeouts(hSerial, &timeouts)) {
         OutputDebugPrintf("Error setting timeouts\n");
         CloseHandle(hSerial);
-        return;
+        hSerial = 0;
+        return 0;
     }
 
-    char dataToSend[] = "Hello, Serial Port!";
-    DWORD bytesWritten;
     uint8_t dataReceived[20];
     DWORD bytesRead;
     int count = 0;
@@ -88,7 +90,8 @@ void Serial_Thread(LPCWSTR comname)
         if (!ReadFile(hSerial, dataReceived, sizeof(dataReceived), &bytesRead, NULL)) {
             OutputDebugPrintf("Error reading from serial port\n");
             CloseHandle(hSerial);
-            return;
+            hSerial = 0;
+            return 0;
         }
         if (bytesRead)
         {
@@ -99,7 +102,8 @@ void Serial_Thread(LPCWSTR comname)
                 uint32_t hex = dataReceived[count];
                 OutputDebugPrintf("%c", hex);
                 if (Handle_cb)
-                    Handle_cb(dataReceived[count++]);
+                    Handle_cb(dataReceived[count]);
+                count++;
                 Sleep(1);
             }
             OutputDebugPrintf("\r\n");
@@ -107,17 +111,21 @@ void Serial_Thread(LPCWSTR comname)
     }
 
     CloseHandle(hSerial);
-    return;
+    hSerial = 0;
+    return 0;
 }
-void SerialPort_Init(void (*cb)(uint8_t* dr), LPCWSTR comname)
+void SerialPort_Init(void (*cb)(uint8_t dr), LPCWSTR comname)
 {
     HANDLE hThread;
     DWORD dwThreadId;
+    Handle_cb = cb;
     hThread = CreateThread(NULL,		 // 默认安全属性
         0,			 // 默认堆栈大小
         Serial_Thread,	 // 线程函数
-        comname,			 // 传递给线程函数的参数
+        (LPVOID)comname,	 // 传递给线程函数的参数
         0,			 // 默认创建标志
         &dwThreadId); // 线程ID)
-    Handle_cb = cb;
+    if (hThread != NULL)
+        CloseHandle(hThread);
 }
+

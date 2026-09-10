@@ -13,8 +13,10 @@
 #define USE_BL 1
 #else
 #define USE_USB 0
-#define USE_BL 1
+#define USE_BL 0
+#include "host_control_protocol.h"
 #include "../serial/serialPort.h"
+#include "../serial/tcpProtocolServer.h"
 #include "../INTERFACE/UI/control/control.h"
 #endif
 
@@ -48,17 +50,17 @@
 
 extern Task_control_info control_info;
 
-// ÃüÁî´°¿Ú ĞèÒªÏß³Ì
+// å‘½ä»¤çª—å£ éœ€è¦çº¿ç¨‹
 
 // log print
 
 // oriange pie
 
-// ble Òª¿ªÏß³ÌÍ¨ĞÅ
+// ble è¦å¼€çº¿ç¨‹é€šä¿¡
 
 void HAL_communication_Bl_Init(void)
 {
-	// ´®¿Ú init
+	// ä¸²å£ init
 }
 
 // yj-60 init
@@ -133,8 +135,20 @@ uint8_t HAL_BL_USART_INIT(void)
 	return 1;
 }
 
+static uint8_t HAL_HOST_CONTROL_INIT(void)
+{
+#ifndef ATM32F43_xx
+	HostControl_Init(TcpProtocol_SendBuf);
+	TcpProtocol_Start(28730, HostControl_ReceiveByte);
+#endif
+	return 1;
+}
+
 uint8_t HAL_BL_USART_Server(void)
 {
+#ifndef ATM32F43_xx
+	HostControl_Process();
+#endif
 #if USE_BL
 	usart_protocol_decoding(0);
 #endif
@@ -889,7 +903,6 @@ void HAL_USB_Command_Handler(void)
 		for (uint16_t i = 0; i < rx_len; i++)
 		{
 			uint8_t ch = usb_rx_buffer[i];
-
 			// Echo character (optional - uncomment if needed)
 			// HAL_USB_ACM_Send(&ch, 1);
 
@@ -927,5 +940,7 @@ void HAL_communication_Init(void)
 	HAL_communication_Mpu_Init();
 	HAL_communication_Bl_Init();
 	HAL_BL_USART_INIT();
+	HAL_HOST_CONTROL_INIT();
 	HAL_USB_ACM_Init(); // Initialize USB ACM
 }
+
