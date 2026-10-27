@@ -1734,6 +1734,11 @@
               <FilePath>.\commuication\communication.c</FilePath>
             </File>
             <File>
+              <FileName>usb_motor_telemetry.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\commuication\usb_motor_telemetry.c</FilePath>
+            </File>
+            <File>
               <FileName>communication_API.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\commuication\communication_API.c</FilePath>

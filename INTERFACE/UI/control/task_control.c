@@ -7,6 +7,7 @@
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #include "task_control.h"
+#include "../varify/verfiy.h"
 #include "../other/system_function.h"
 #include "../Task/task_info_struct.h"
 #include "control_Hardware_API.h"
@@ -174,12 +175,29 @@ void task_interval_handle(int index)
 	}
 }
 
+static uint8_t Task_control_LicenseAllowed(Task_control_info *e)
+{
+    uint8_t status = Verify_Check_isExpired();
+    e->isExpired = status;
+    if (status == okay) return 1;
+    Ctrl_Msg_Printf(status == expired ? "Start rejected: license expired" :
+        status == NoTag ? "Start rejected: invalid license" :
+        "Start rejected: time not configured");
+    return 0;
+}
+
 uint8_t Task_control_Begin(Task_control_info *e)
 {
+	if (!e) return 0;
 	if (e->State_Bit.IsRunning == 1)
 	{
 		return 0;
 	}
+	if (!Task_control_LicenseAllowed(e))
+    {
+        e->StartWithIndex = 0;
+        return 0;
+    }
 	e->taskCount = HAL_Task_GetArray(TaskArray, Task_ARY_MAX);
 	if (e->taskCount == 0 || e->taskCount > Task_ARY_MAX)
 		return 0;
@@ -239,7 +257,13 @@ BEGIN_POS:
 	while (1)
 	{
 		if (e->State_Bit.isRun == 1)
-		{
+        {
+            if (!Task_control_LicenseAllowed(e))
+            {
+                e->State_Bit.isRun = 0;
+                e->StartWithIndex = 0;
+                continue;
+            }
 			e->State_Bit.flag = 0;
 			e->Error_Bit.flag = 0;
 			if (e == 0 || e->taskArray == 0)

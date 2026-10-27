@@ -4,7 +4,7 @@
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com.
  * @LastEditTime: 2024-05-29 15:58:00
  * @FilePath: \P0_Primary_PJ\usb\usb_init.c
- * @Description: ÕâÊÇÄ¬ÈÏÉèÖÃ,ÇëÉèÖÃ`customMade`, ´ò¿ªkoroFileHeader²é¿´ÅäÖÃ ½øĞĞÉèÖÃ: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @Description: ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`customMade`, ï¿½ï¿½koroFileHeaderï¿½é¿´ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #ifndef __USB_INIT_H_
 #define __USB_INIT_H_
@@ -17,4 +17,5 @@ void USB1_Init(void);
 void usb_send(uint8_t *report, uint16_t len);
 uint8_t USB_CDC_Send(uint8_t CH, uint8_t *buf, uint16_t len);
 uint16_t USB_CDC_GET(uint8_t CH, uint8_t *buf);
+uint8_t USB_CDC_Tx_Completed(uint8_t CH);
 #endif

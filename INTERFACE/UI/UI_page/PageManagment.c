@@ -131,9 +131,10 @@ void UI_Page_Management_Init()
 	lv_obj_clear_flag(sub_1_page, LV_OBJ_FLAG_SCROLLABLE);
 	lv_event_send(setpageCont, LV_EVENT_CLICKED, 0);
 	int value = 0;
+	Verify_hardResetVaild();
 	Message_Center_Read_prinft("Ctrl", &value, sizeof(int), "isNeedSetup");
 	// value = 0;
-//	Verify_hardResetVaild();
+	
 //	value = 0;
 #ifndef ATM32F43_xx
 	//value = 1;

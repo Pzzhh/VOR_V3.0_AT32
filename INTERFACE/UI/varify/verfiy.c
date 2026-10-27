@@ -32,9 +32,9 @@ timetyped InfiniteTag = { .date.year = 99,
 .date.sec = 1 };
 
 
-const timetyped HardResetvaildtag = { .date.year = 2025,
-					.date.month = 11,
-					.date.date = 18,
+const timetyped HardResetvaildtag = { .date.year = 2026,
+					.date.month = 9,
+					.date.date = 26,
 					.date.hour = 1,
 					.date.min = 1,
 					.date.sec = 1 };
@@ -45,26 +45,75 @@ const timetyped HardResetvaildtag = { .date.year = 2025,
 //.date.min = 1,
 //.date.sec = 1 };
 
-uint8_t Verify_Compare_time(timetyped* expiredTag, timetyped localtime)
+static int get_month_days(int year, int month);
+
+#ifdef ATM32F43_xx
+#define VERIFY_LOCK() taskENTER_CRITICAL()
+#define VERIFY_UNLOCK() taskEXIT_CRITICAL()
+#else
+static SRWLOCK verify_lock = SRWLOCK_INIT;
+#define VERIFY_LOCK() AcquireSRWLockExclusive(&verify_lock)
+#define VERIFY_UNLOCK() ReleaseSRWLockExclusive(&verify_lock)
+#endif
+
+extern Task_control_info control_info;
+Verify_Cache_Type Verify_Cache = {0};
+
+static uint8_t Verify_DateValid(const timetyped *t)
 {
-	uint8_t status = 0;
-	for (int i = 0; i < 3; i++)
-	{
-		if (localtime.num[i] >= expiredTag->num[i])
-		{
-			status = expired;
-		}
-		else
-		{
-			status = okay;
-			break;
-		}
-	}
-	return status;
+    return t->date.year >= 2000 && t->date.year <= 2099 &&
+        t->date.month >= 1 && t->date.month <= 12 &&
+        t->date.date >= 1 &&
+        t->date.date <= get_month_days(t->date.year, t->date.month) &&
+        t->date.hour < 24 && t->date.min < 60 && t->date.sec < 60;
 }
 
+uint8_t Verify_Compare_time(timetyped *expiredTag, timetyped localtime)
+{
+    if (!Verify_DateValid(&localtime))
+        return SetTimeOnly;
+    if (memcmp(expiredTag, &InfiniteTag, sizeof(InfiniteTag)) == 0)
+        return okay;
+    if (!Verify_DateValid(expiredTag))
+        return NoTag;
+    for (int i = 0; i < 6; ++i)
+    {
+        if (localtime.num[i] < expiredTag->num[i]) return okay;
+        if (localtime.num[i] > expiredTag->num[i]) return expired;
+    }
+    return expired;
+}
 
-// 判断是否为闰年
+void Verify_Config_Update(uint8_t id, const uint8_t *data, int length)
+{
+    timetyped date = {0};
+    uint8_t valid = 0;
+    if (id == 1 && data && length == sizeof(date))
+    {
+        memcpy(&date, data, sizeof(date));
+        valid = Verify_DateValid(&date) ||
+            memcmp(&date, &InfiniteTag, sizeof(date)) == 0;
+    }
+    VERIFY_LOCK();
+    if (id == 1)
+    {
+        Verify_Cache.licenseDate = date;
+        Verify_Cache.licenseValid = valid;
+    }
+    else if (id == 3)
+        Verify_Cache.timeConfigured = data && length == 2 &&
+            data[0] == 0xAA && data[1] == 0xAA;
+    VERIFY_UNLOCK();
+}
+
+void Verify_Init(void)
+{
+    uint8_t buf[50] = {0};
+    HAL_CONFIG_READ(1, buf, sizeof(buf));
+    HAL_CONFIG_READ(3, buf, sizeof(buf));
+    Verify_Check_isExpired();
+}
+
 static int is_leap_year(int year) {
 	return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
@@ -98,20 +147,13 @@ static int date_to_days(const timetyped* t) {
 	return days;
 }
 
-void  Verify_TimeCheck(timetyped* time)
+void Verify_TimeCheck(timetyped *time)
 {
-	uint8_t rflag = 0;
-	uint8_t res = 1;
-	const int dayN[] = { 0,31,29,31,30,31,30,
-						31,31,30,31,30,31 };
-	const int dayR[] = { 0,31,28,31,30,31,30,
-						31,31,30,31,30,31 };
-	if (time->date.year % 4 == 0)
-		rflag = 1;
-	const int* day = (rflag) ? dayR : dayN;
-	time->date.month = (time->date.month > 12 || time->date.month == 0) ? 12 : time->date.month;
-	time->date.date = (time->date.date > day[time->date.month]) ? day[time->date.month] : time->date.date;
-
+    if (time->date.month == 0 || time->date.month > 12)
+        time->date.month = 12;
+    int days = get_month_days(time->date.year, time->date.month);
+    if (time->date.date > days) time->date.date = days;
+    if (time->date.date == 0) time->date.date = 1;
 }
 
 // 计算 expiredTag 距离 localtime 剩余天数（正数为剩余，负数为已过期）
@@ -148,45 +190,21 @@ void Verify_hardResetVaild(void)
 
 uint8_t Verify_Check_isExpired(void)
 {
-	uint8_t buf[50] = { 0 };
-	uint8_t status = NoTag;
-	//check expired time tag detail
-		//read time using day
-	//HAL_CONFIG_WRITE(1, &testTag, sizeof(testTag));
-
-	//if (HAL_isBypassVarfiy_key_press())
-	//{
-	//	status = SetTimeOnly;
-	//	return status;
-	//}
-	//else
-	{
-		uint8_t res = HAL_CONFIG_READ(3, buf, 0x20);
-		if (res == 0)
-		{
-			status = SeTboth;
-			return status;
-		}
-	}
-	uint8_t res = HAL_CONFIG_READ(1, buf, 0x20);
-
-	// 自动设置 设备有效期
-
-	if (res != 0)
-	{
-		timetyped* expiredTag = (timetyped*)&buf[0];
-		timetyped localtime;
-		HAL_TIME_Get(&localtime);
-		Message_Center_Read_prinft("Ctrl", &localtime, sizeof(localtime), "ReqTime");
-		status = Verify_Compare_time(expiredTag, localtime);
-	}
-	else
-	{
-		/*HAL_CONFIG_WRITE(1, &InfiniteTag, sizeof(InfiniteTag));*/
-	}
-	return status;
+    timetyped now = {0};
+    uint8_t status;
+    VERIFY_LOCK();
+    if (!Verify_Cache.timeConfigured)
+        status = SeTboth;
+    else if (!Verify_Cache.licenseValid)
+        status = NoTag;
+    else if (!HAL_TIME_Get(&now))
+        status = SetTimeOnly;
+    else
+        status = Verify_Compare_time(&Verify_Cache.licenseDate, now);
+    control_info.isExpired = status;
+    VERIFY_UNLOCK();
+    return status;
 }
-
 
 //0 infinite
 uint8_t Verify_get_license_Date(timetyped* t)
@@ -194,7 +212,7 @@ uint8_t Verify_get_license_Date(timetyped* t)
 
 	uint8_t buf[0x20] = { 0 };
 	uint8_t res = HAL_CONFIG_READ(1, buf, 0x20);
-	if (res != 0)
+	if (res == sizeof(timetyped))
 	{
 		memcpy(t, buf, sizeof(timetyped));
 		return 1;
@@ -209,23 +227,22 @@ timetyped Verify_Month_2_Expired_Date(uint8_t month)
 {
 	timetyped localtime = { 0 };
 	HAL_TIME_Get(&localtime);
-	uint8_t year = month / 12;
-	uint8_t remain_month = month % 12;
-	uint8_t needNextyear=((12-localtime.date.month)<remain_month)?1:0;
-	if(needNextyear)
-		year++;
-	localtime.date.year += year;
-	localtime.date.month += remain_month;
-	localtime.date.month%=12;
-	Verify_TimeCheck(&localtime);
-	HAL_CONFIG_WRITE(1, (uint8_t*)&localtime, sizeof(localtime));
+    uint16_t months = localtime.date.month - 1 + month;
+    localtime.date.year += months / 12;
+    localtime.date.month = months % 12 + 1;
+    Verify_TimeCheck(&localtime);
+    HAL_CONFIG_WRITE(1, (uint8_t*)&localtime, sizeof(localtime));
+    return localtime;
 }
 
 uint8_t Verify_Set_Time(void* time)
 {
-	uint8_t buf[2] = { 0xAA,0xAA }, status = 0;
-	HAL_TIME_Set(time);
-	HAL_CONFIG_WRITE(3, buf, 2);
+	uint8_t buf[2] = { 0xAA,0xAA };
+    if (!time || !Verify_DateValid((timetyped *)time) || !HAL_TIME_Set(time))
+        return 0;
+    uint8_t result = HAL_CONFIG_WRITE(3, buf, 2);
+    Verify_Check_isExpired();
+    return result;
 }
 
 
@@ -234,6 +251,7 @@ uint8_t Verify_Factory_Reset(void)
 	uint8_t buf[0x20] = { 0 };
 	HAL_CONFIG_WRITE(1, (uint8_t*)buf, 0);
 	HAL_CONFIG_WRITE(3, (uint8_t*)buf, 0);
+    return 0;
 }
 
 uint8_t Verify_Set_Subscribe(uint8_t month)

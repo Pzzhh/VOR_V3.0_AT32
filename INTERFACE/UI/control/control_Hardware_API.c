@@ -15,7 +15,10 @@
 
 #include "stdarg.h"
 #include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
 #include "version.h"
+#include "../varify/verfiy.h"
 
 #ifdef ATM32F43_xx
 
@@ -393,7 +396,7 @@ uint8_t HAL_TIME_Set(timetyped *t)
 #ifdef ATM32F43_xx
 	uint8_t timearray[4] = {0};
 	rtc_set_date(t->date.year, t->date.month, t->date.date, 1);
-	rtc_set_time(t->date.hour, t->date.min, 0, 0);
+	rtc_set_time(t->date.hour, t->date.min, t->date.sec, 0);
 #else
 	simtime = *t;
 #endif
@@ -503,10 +506,10 @@ int HAL_TaskStroage_Read(uint8_t id, Task_Parameter_Struct *e)
 		return 0;
 	int pos = (int)strlen(Path);
 	sprintf(&Path[pos], "\\Task.hex");
-	FILE *f = fopen(Path, "r");
+	FILE *f = fopen(Path, "rb");
 	if (f == NULL)
 	{
-		f = fopen(Path, "w");
+		f = fopen(Path, "wb");
 		if (f == NULL)
 			return res;
 	}
@@ -575,16 +578,16 @@ int HAL_TaskStroage_Write(uint8_t id, Task_Parameter_Struct *e, uint8_t count)
 	_getcwd(Path, 1000);
 	int pos = strlen(Path);
 	sprintf(&Path[pos], "\\Task.hex");
-	FILE *f = fopen(Path, "r+");
+	FILE *f = fopen(Path, "r+b");
 	if (f == NULL)
 	{
-		f = fopen(Path, "w");
+		f = fopen(Path, "wb");
 		if (f == NULL)
 			return 0;
 	}
 	fread(buf, sizeof(buf), 1, f);
 	fclose(f);
-	f = fopen(Path, "w+");
+	f = fopen(Path, "w+b");
 	if (f == 0)
 		return 0;
 	int structsize = sizeof(Task_Parameter_Struct) * count;
@@ -690,7 +693,7 @@ int Hal_Outage_RunTimeLog()
 	return res;
 }
 
-int HAL_CONFIG_READ(uint8_t ID, uint8_t *buffer, uint32_t size)
+static int HAL_CONFIG_READ_RAW(uint8_t ID, uint8_t *buffer, uint32_t size)
 {
 #ifndef ATM32F43_xx
 	int res = 0;
@@ -699,10 +702,10 @@ int HAL_CONFIG_READ(uint8_t ID, uint8_t *buffer, uint32_t size)
 	_getcwd(Path, 1000);
 	int pos = strlen(Path);
 	sprintf(&Path[pos], "\\config.hex");
-	FILE *f = fopen(Path, "r");
+	FILE *f = fopen(Path, "rb");
 	if (f == NULL)
 	{
-		f = fopen(Path, "w");
+		f = fopen(Path, "wb");
 		if (f == NULL)
 			return res;
 	}
@@ -716,6 +719,7 @@ int HAL_CONFIG_READ(uint8_t ID, uint8_t *buffer, uint32_t size)
 			if (Rbuf[i] == ID)
 			{
 				uint32_t crc_Len = Rbuf[1 + i];
+                if (crc_Len > 46) return 0;
 				uint16_t Crc = crc16_modbus(&Rbuf[i + 2], crc_Len);
 				uint16_t Filecrc = Rbuf[i + crc_Len + 2];
 				Filecrc = Filecrc << 8;
@@ -748,6 +752,7 @@ int HAL_CONFIG_READ(uint8_t ID, uint8_t *buffer, uint32_t size)
 	uint8_t *BKSbuf = (uint8_t *)malloc(EROM_MAP_info_pS);
 	if (BKSbuf == 0)
 		return 0;
+	memset(BKSbuf, 0, EROM_MAP_info_pS);
 	M24C64_Read_Byte(ID * EROM_MAP_info_pS + EROM_MAP_info_base, BKSbuf, EROM_MAP_info_pS);
 	int readcount = BKSbuf[1];
 	uint16_t ReadEnd = readcount + 2;
@@ -755,7 +760,7 @@ int HAL_CONFIG_READ(uint8_t ID, uint8_t *buffer, uint32_t size)
 	// first id len [...] crc
 	if (BKSbuf[0] == ID)
 	{
-		if (readcount < 50)
+		if (readcount <= EROM_MAP_info_pS - 4 && (uint32_t)readcount <= size)
 		{
 			crcValue = crc16_modbus(BKSbuf, readcount + 2);
 			uint16_t Ocrc = BKSbuf[ReadEnd];
@@ -772,7 +777,7 @@ int HAL_CONFIG_READ(uint8_t ID, uint8_t *buffer, uint32_t size)
 #endif
 }
 
-uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t *buffer, uint32_t size)
+static uint8_t HAL_CONFIG_WRITE_RAW(uint8_t ID, uint8_t *buffer, uint32_t size)
 {
 #ifndef ATM32F43_xx
 	char Path[1000];
@@ -782,12 +787,12 @@ uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t *buffer, uint32_t size)
 	_getcwd(Path, 1000);
 	int pos = strlen(Path);
 	sprintf(&Path[pos], "\\config.hex");
-	FILE *f = fopen(Path, "r+");
+	FILE *f = fopen(Path, "r+b");
 	if (f == 0)
 		return 0;
 	fread(buf, sizeof(buf), 1, f);
 	fclose(f);
-	f = fopen(Path, "w+");
+	f = fopen(Path, "w+b");
 	if (f == 0)
 		return 0;
 	int count = 0;
@@ -814,17 +819,20 @@ uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t *buffer, uint32_t size)
 	uint8_t *buf = (uint8_t *)malloc(EROM_MAP_info_pS);
 	if (buf == 0)
 		return 0;
+    memset(buf, 0, EROM_MAP_info_pS);
 	// uint8_t* buf = (uint8_t*)0x40024000 + ID * 20;
 	//	int readcount = buf[1];
 	int buf_end;
 	// data format:
 	// first id len [...] crc
-	if (size < EROM_MAP_info_pS - 2)
+	if (ID < (EROM_MAP_Task_Stroage - EROM_MAP_info_base) / EROM_MAP_info_pS &&
+        size <= EROM_MAP_info_pS - 4)
 	{
 		if (size == 0)
 		{
 			memset(&buf[0], 0,EROM_MAP_info_pS);
 			M24C64_Write_Byte(ID * EROM_MAP_info_pS + EROM_MAP_info_base, buf, EROM_MAP_info_pS);
+			res = 1;
 			goto out;
 		}
 		memcpy(&buf[2], buffer, size);
@@ -841,6 +849,78 @@ uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t *buffer, uint32_t size)
 	free(buf);
 	return res;
 #endif
+}
+
+/* Serialize records and cache publication; never hold a critical section over I2C. */
+#ifdef ATM32F43_xx
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+static SemaphoreHandle_t config_mutex;
+static uint8_t Config_Lock(void)
+{
+    taskENTER_CRITICAL();
+    if (!config_mutex) config_mutex = xSemaphoreCreateMutex();
+    taskEXIT_CRITICAL();
+    return config_mutex && xSemaphoreTake(config_mutex, portMAX_DELAY) == pdTRUE;
+}
+static void Config_Unlock(void)
+{
+    if (config_mutex) xSemaphoreGive(config_mutex);
+}
+#else
+static SRWLOCK config_mutex = SRWLOCK_INIT;
+#define Config_Lock() (AcquireSRWLockExclusive(&config_mutex), 1)
+#define Config_Unlock() ReleaseSRWLockExclusive(&config_mutex)
+#endif
+
+int HAL_CONFIG_READ(uint8_t ID, uint8_t *buffer, uint32_t size)
+{
+    int result;
+    if (!Config_Lock())
+    {
+        if (ID == 1 || ID == 3)
+        {
+            Verify_Config_Update(ID, 0, 0);
+            Verify_Check_isExpired();
+        }
+        return 0;
+    }
+    result = HAL_CONFIG_READ_RAW(ID, buffer, size);
+    if (ID == 1 || ID == 3)
+    {
+        Verify_Config_Update(ID, buffer, result);
+        Verify_Check_isExpired();
+    }
+    Config_Unlock();
+    return result;
+}
+
+uint8_t HAL_CONFIG_WRITE(uint8_t ID, uint8_t *buffer, uint32_t size)
+{
+    uint8_t result;
+    if (!Config_Lock())
+    {
+        if (ID == 1 || ID == 3)
+        {
+            Verify_Config_Update(ID, 0, 0);
+            Verify_Check_isExpired();
+        }
+        return 0;
+    }
+    if (ID == 1 || ID == 3) Verify_Config_Update(ID, 0, 0);
+    result = HAL_CONFIG_WRITE_RAW(ID, buffer, size);
+    if (ID == 1 || ID == 3)
+    {
+        uint8_t actual[50] = {0};
+        int length = HAL_CONFIG_READ_RAW(ID, actual, sizeof(actual));
+        Verify_Config_Update(ID, actual, length);
+        Verify_Check_isExpired();
+        if (size != length || (size && memcmp(buffer, actual, size) != 0))
+            result = 0;
+    }
+    Config_Unlock();
+    return result;
 }
 
 void HAL_EROM_Init(void)

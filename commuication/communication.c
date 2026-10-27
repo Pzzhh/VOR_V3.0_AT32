@@ -3,12 +3,13 @@
  * @Date: 2024-08-05 14:28:28
  * @LastEditors: pzzhh2 101804901+Pzzhh@users.noreply.github.com
  * @LastEditTime: 2024-09-23 17:19:07
- * @FilePath: \USERd:\workfile\ÏîÄ¿3 vor\software\VOR_V2.0\commuication\communication.c
- * @Description: ÕâÊÇÄ¬ÈÏÉèÖÃ,ÇëÉèÖÃ`customMade`, ´ò¿ªkoroFileHeader²é¿´ÅäÖÃ ½øÐÐÉèÖÃ: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @FilePath: \USERd:\workfile\ï¿½ï¿½Ä¿3 vor\software\VOR_V2.0\commuication\communication.c
+ * @Description: ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`customMade`, ï¿½ï¿½koroFileHeaderï¿½é¿´ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #include "communication.h"
 #include "../INTERFACE/UI/other/system_function.h"
 #include "communication_API.h"
+#include "usb_motor_telemetry.h"
 
 
 extern void jump_to_bootloader(void);
@@ -24,7 +25,7 @@ void communication_thread()
 		ControlGetTick();
 		HAL_BL_USART_Server();
 #ifdef ATM32F43_xx
-		// USBÃüÁî´¦Àí
+		// USBï¿½ï¿½ï¿½î´¦ï¿½ï¿½
 		HAL_USB_Command_Handler();
 #endif
 		ControlDelay(10);
@@ -40,6 +41,15 @@ void Communication_Init()
 		750,
 		"communication",
 		11);
+#ifdef ATM32F43_xx
+	thread_create(
+		USB_Motor_Telemetry_Thread,
+		0,
+		&taskhand[1],
+		256,
+		"usb_telemetry",
+		11);
+#endif
 	// ControlThreadCreate(
 	// 	communication_thread,
 	// 	0,

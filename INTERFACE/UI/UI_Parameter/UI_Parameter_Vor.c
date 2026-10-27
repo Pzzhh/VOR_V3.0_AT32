@@ -1,11 +1,12 @@
-﻿#include "UI_Parameter_Vor.h"
+#include "UI_Parameter_Vor.h"
 #include "UI_Parameter_Set.h"
 #include "../UI_Include.h"
 #include "../UI_Component/UI_SpinBox.h"
 #include "../UI_Component/UI_Dropdown.h"
 
 const char* Vor_VelItem = "5/s\n""10/s\n""20/s\n""30/s\n" "40/s\n""50/s\n""60/s\n""80/s";
-const char* Vor_FreqItem = "0.1HZ\n"
+const char* Vor_FreqItem = "0.02HZ\n"
+"0.05HZ\n"
 "0.2HZ\n"
 "0.3HZ\n"
 "0.5HZ\n"

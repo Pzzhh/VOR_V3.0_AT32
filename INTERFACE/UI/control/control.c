@@ -851,7 +851,7 @@ void controlfunction()
 	Task_mangager_Init();
 	Communication_Init();
 	Ctrl_Resume_Config();
-	// control_info.isExpired = Verify_Check_isExpired();
+	Verify_Init();
 	control_info.State2_Bit.H_init = 1; // for ui sync
 	control_info.State_Bit.powerUp = 3;
 
